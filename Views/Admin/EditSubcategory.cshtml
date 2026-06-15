@@ -1,0 +1,108 @@
+@model PharmaSkincare.ViewModels.SubcategoryViewModel
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Edit Subcategory"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-pencil me-2" style="color:var(--ps-primary);"></i>Edit Subcategory</h1>
+    </div>
+    <a asp-action="Subcategories" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<form asp-action="EditSubcategory" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input asp-for="SubcategoryId" type="hidden" />
+
+    <div class="row g-4">
+
+        <!-- ── Left: Main fields ── -->
+        <div class="col-lg-7">
+            <div class="form-card mb-3">
+                <h6 class="fw-700 mb-3 pb-2 border-bottom">Identity</h6>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="CategoryId" class="form-label"></label>
+                        <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select">
+                            <option value="">-- Select Category --</option>
+                        </select>
+                        <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label">Description <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-card mb-3">
+                <h6 class="fw-700 mb-3 pb-2 border-bottom">Formula & Format</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="FormulaType" class="form-label">Formula Type <span class="text-muted fw-normal">(optional)</span></label>
+                        <input asp-for="FormulaType" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ProductFormat" class="form-label"></label>
+                        <select asp-for="ProductFormat" asp-items="Html.GetEnumSelectList<ProductFormat>()" class="form-select"></select>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="HealthBenefits" class="form-label">Health Benefits <span class="text-muted fw-normal">(optional)</span></label>
+                        <input asp-for="HealthBenefits" class="form-control" placeholder="e.g. Muscle Recovery, Pain Relief" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Right: Size type + image ── -->
+        <div class="col-lg-5">
+            <div class="form-card mb-3">
+                <h6 class="fw-700 mb-3 pb-2 border-bottom">Size Type</h6>
+                <div class="alert alert-warning py-2 mb-3" style="font-size:0.96rem;">
+                    <i class="bi bi-lock me-1"></i>
+                    Size type <strong>cannot be changed</strong> if products exist under this subcategory.
+                    Changing it will be rejected with a validation error.
+                </div>
+                @foreach (var val in new[] { (SizeType.None,"None"), (SizeType.Ml,"ml"), (SizeType.Pills,"pills") })
+                {
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" asp-for="SizeType" value="@((int)val.Item1)" id="st_@val.Item1" />
+                        <label class="form-check-label fw-500" for="st_@val.Item1" style="font-size:1.02rem;">@val.Item2</label>
+                    </div>
+                }
+                <span asp-validation-for="SizeType" class="text-danger small"></span>
+            </div>
+
+            <div class="form-card mb-3">
+                <h6 class="fw-700 mb-3 pb-2 border-bottom">Main Image</h6>
+                @if (!string.IsNullOrEmpty(Model.MainImageUrl))
+                {
+                    <img src="@Model.MainImageUrl" alt="Current image"
+                         style="width:100%;max-height:180px;object-fit:contain;border-radius:10px;background:#F0F7F2;margin-bottom:0.75rem;padding:0.5rem;" />
+                }
+                <input asp-for="MainImageFile" type="file" class="form-control" accept="image/*" />
+                <div class="form-text">Upload a new image to replace the current one.</div>
+            </div>
+
+            <div class="form-card">
+                <div class="form-check">
+                    <input class="form-check-input" asp-for="IsActive" />
+                    <label class="form-check-label" asp-for="IsActive">Active (visible in shop)</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save Changes</button>
+        <a asp-action="Subcategories" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

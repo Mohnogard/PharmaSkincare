@@ -1,0 +1,81 @@
+@model PharmaSkincare.ViewModels.EditProfileViewModel
+@{ ViewData["Title"] = "My Profile"; }
+
+<div class="page-header">
+    <h1><i class="bi bi-person-circle me-2" style="color:var(--ps-primary);"></i>My Profile</h1>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="form-card text-center">
+            <div style="width:80px;height:80px;background:#e8f5f0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:2rem;color:var(--ps-primary);">
+                @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
+                {
+                    <img src="@Model.CurrentImageUrl" alt="Profile" style="width:80px;height:80px;border-radius:50%;object-fit:cover;" />
+                }
+                else
+                {
+                    <i class="bi bi-person"></i>
+                }
+            </div>
+            <h5 class="fw-700" style="font-weight:700;">@User.Identity?.Name</h5>
+            <span class="badge" style="background:var(--ps-primary);">
+                @if (User.IsInRole("Admin")) { <text>Administrator</text> }
+                else if (User.IsInRole("WarehouseEmployee")) { <text>Warehouse Employee</text> }
+                else if (User.IsInRole("MarketingManager")) { <text>Marketing Manager</text> }
+                else { <text>Customer</text> }
+            </span>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="form-card">
+            <form asp-action="Profile" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 mb-3" style="font-size:1.02rem;"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="FirstName" class="form-label"></label>
+                        <input asp-for="FirstName" class="form-control" />
+                        <span asp-validation-for="FirstName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="LastName" class="form-label"></label>
+                        <input asp-for="LastName" class="form-control" />
+                        <span asp-validation-for="LastName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="PhoneNumber" class="form-label"></label>
+                        <input asp-for="PhoneNumber" class="form-control" type="tel" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ProfileImage" class="form-label"></label>
+                        <input asp-for="ProfileImage" type="file" class="form-control" accept="image/*" />
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Address" class="form-label"></label>
+                        <input asp-for="Address" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="City" class="form-label"></label>
+                        <input asp-for="City" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Country" class="form-label"></label>
+                        <input asp-for="Country" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="PostalCode" class="form-label"></label>
+                        <input asp-for="PostalCode" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check2 me-1"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

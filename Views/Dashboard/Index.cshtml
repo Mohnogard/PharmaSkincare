@@ -1,0 +1,289 @@
+@model PharmaSkincare.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-grid-1x2 me-2" style="color:var(--ps-primary);"></i>Dashboard</h1>
+        <small class="text-muted">Welcome back — here's what's happening today</small>
+    </div>
+    <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>@DateTime.UtcNow.ToString("dddd, dd MMMM yyyy")</span>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="label mb-2">Total Products</div>
+                    <div class="value">@Model.TotalProducts</div>
+                    <div class="mt-1 small text-danger">@Model.LowStockCount low stock</div>
+                </div>
+                <div class="icon-box" style="background:#e8f5f0;color:var(--ps-primary);">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="label mb-2">Total Orders</div>
+                    <div class="value">@Model.TotalOrders</div>
+                    <div class="mt-1 small text-warning">@Model.PendingOrders pending</div>
+                </div>
+                <div class="icon-box" style="background:#fff3e0;color:#f39c12;">
+                    <i class="bi bi-receipt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="label mb-2">Monthly Revenue</div>
+                    <div class="value">JD @Model.MonthlyRevenue.ToString("N0")</div>
+                    <div class="mt-1 small text-muted">JD @Model.TotalRevenue.ToString("N0") total</div>
+                </div>
+                <div class="icon-box" style="background:#e8f5e9;color:#27ae60;">
+                    <i class="bi bi-currency-exchange"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="label mb-2">Shipments</div>
+                    <div class="value">@Model.TotalShipments</div>
+                    <div class="mt-1 small text-info">@Model.ActiveCampaigns active campaigns</div>
+                </div>
+                <div class="icon-box" style="background:#e3f2fd;color:#1976d2;">
+                    <i class="bi bi-truck"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="chart-card h-100">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="fw-700 mb-0" style="font-weight:700;">Revenue Trend (Last 6 Months)</h6>
+            </div>
+            <canvas id="revenueChart" height="120"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="chart-card h-100">
+            <h6 class="fw-700 mb-3" style="font-weight:700;">Order Status</h6>
+            <canvas id="orderStatusChart" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts & Tables Row -->
+<div class="row g-3 mb-4">
+    <!-- Low Stock Alert -->
+    <div class="col-lg-6">
+        <div class="table-card">
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-700" style="font-weight:700;"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Low Stock Alerts</h6>
+                <a asp-controller="Inventory" asp-action="LowStock" class="btn btn-sm btn-outline-danger">View All</a>
+            </div>
+            @if (Model.LowStockProducts.Any())
+            {
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr><th>Product</th><th>Category</th><th>Stock</th><th>Min</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.LowStockProducts)
+                        {
+                            <tr>
+                                <td><div class="fw-500" style="font-weight:500;">@p.DisplayName</div><small class="text-muted">@p.SKU</small></td>
+                                <td><span class="badge bg-secondary">@p.Subcategory?.Category?.Name</span></td>
+                                <td><span class="stock-low">@p.StockQuantity</span></td>
+                                <td class="text-muted">@p.MinimumStockLevel</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-check-circle fs-2 text-success"></i>
+                    <p class="mt-2 mb-0">All products are adequately stocked.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Expiring Certificates -->
+    <div class="col-lg-6">
+        <div class="table-card">
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-700" style="font-weight:700;"><i class="bi bi-shield-exclamation text-warning me-2"></i>Expiring Certificates</h6>
+                <a asp-controller="Certificates" asp-action="Index" asp-route-filter="expiring" class="btn btn-sm btn-outline-warning">View All</a>
+            </div>
+            @if (Model.ExpiringCertificatesList.Any())
+            {
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr><th>Certificate</th><th>Issuer</th><th>Expires</th><th>Days</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.ExpiringCertificatesList)
+                        {
+                            var days = c.DaysUntilExpiry;
+                            var badgeClass = days < 0 ? "bg-danger" : days <= 7 ? "bg-danger" : days <= 14 ? "bg-warning text-dark" : "bg-warning text-dark";
+                            <tr>
+                                <td><div class="fw-500" style="font-weight:500;font-size:1.02rem;">@c.CertificateName</div></td>
+                                <td class="text-muted small">@c.IssuingOrganization</td>
+                                <td class="small">@c.ExpiryDate.ToString("dd MMM yy")</td>
+                                <td><span class="badge @badgeClass">@(days < 0 ? "Expired" : $"{days}d")</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-shield-check fs-2 text-success"></i>
+                    <p class="mt-2 mb-0">No certificates expiring soon.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders & Top Products -->
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="table-card">
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-700" style="font-weight:700;"><i class="bi bi-receipt me-2" style="color:var(--ps-primary);"></i>Recent Orders</h6>
+                <a asp-controller="Orders" asp-action="Index" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr><th>#</th><th>Customer</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model.RecentOrders)
+                    {
+                        var statusClass = order.Status switch {
+                            PharmaSkincare.Models.OrderStatus.Delivered => "bg-success",
+                            PharmaSkincare.Models.OrderStatus.Shipped => "bg-info",
+                            PharmaSkincare.Models.OrderStatus.Processing => "bg-primary",
+                            PharmaSkincare.Models.OrderStatus.Cancelled => "bg-danger",
+                            PharmaSkincare.Models.OrderStatus.Returned => "bg-secondary",
+                            _ => "bg-warning text-dark"
+                        };
+                        <tr>
+                            <td><span class="fw-500" style="font-weight:500;">#@order.OrderId</span></td>
+                            <td>@order.Customer?.FullName</td>
+                            <td class="text-muted small">@order.OrderDate.ToString("dd MMM")</td>
+                            <td>@order.OrderItems.Count</td>
+                            <td>JD @order.TotalAmount.ToString("N2")</td>
+                            <td><span class="badge badge-status @statusClass">@order.Status</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="table-card">
+            <div class="p-3 border-bottom">
+                <h6 class="mb-0 fw-700" style="font-weight:700;"><i class="bi bi-trophy me-2" style="color:#f39c12;"></i>Top Products</h6>
+            </div>
+            @if (Model.TopSellingProducts.Any())
+            {
+                <div class="p-3">
+                    @foreach (var (item, i) in Model.TopSellingProducts.Select((x, i) => (x, i)))
+                    {
+                        <div class="d-flex align-items-center gap-3 @(i < Model.TopSellingProducts.Count - 1 ? "mb-3 pb-3 border-bottom" : "")">
+                            <div style="width:28px;height:28px;background:@(i==0?"#ffd700":i==1?"#c0c0c0":"#cd7f32");border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.96rem;">
+                                @(i + 1)
+                            </div>
+                            <div class="flex-grow-1">
+                                <div style="font-size:1.02rem;font-weight:600;">@item.ProductName</div>
+                                <small class="text-muted">@item.TotalSold units sold</small>
+                            </div>
+                            <div style="font-size:1.02rem;font-weight:600;color:var(--ps-primary);">JD @item.Revenue.ToString("N0")</div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="p-4 text-center text-muted"><small>No sales data yet.</small></div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+// Revenue Chart
+const revenueCtx = document.getElementById('revenueChart');
+const revenueData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyRevenueData));
+new Chart(revenueCtx, {
+    type: 'line',
+    data: {
+        labels: revenueData.map(d => d.Month),
+        datasets: [{
+            label: 'Revenue (JD)',
+            data: revenueData.map(d => d.Revenue),
+            borderColor: '#1a7a5e',
+            backgroundColor: 'rgba(26,122,94,0.08)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#1a7a5e',
+            pointRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: '#f0f2f5' }, ticks: { callback: v => 'JD ' + v } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+
+// Order Status Pie
+const orderCtx = document.getElementById('orderStatusChart');
+const orderData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OrderStatusBreakdown));
+new Chart(orderCtx, {
+    type: 'doughnut',
+    data: {
+        labels: orderData.map(d => d.Status),
+        datasets: [{
+            data: orderData.map(d => d.Count),
+            backgroundColor: ['#f39c12','#1976d2','#9b59b6','#2ecc71','#1a7a5e','#e74c3c','#95a5a6'],
+            borderWidth: 2, borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } }
+        },
+        cutout: '65%'
+    }
+});
+</script>
+}

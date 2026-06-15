@@ -1,0 +1,494 @@
+@model PharmaSkincare.Models.Product
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = Model.DisplayName; Layout = "_ShopLayout"; }
+
+@{
+    bool hasPurchased = ViewBag.HasPurchasedProduct == true;
+    bool isWishlisted = ViewBag.IsWishlisted == true;
+    var galleryImages = Model.Images.OrderBy(i => i.DisplayOrder).ToList();
+    bool hasGallery = galleryImages.Any();
+    var allVariants = (ViewBag.ProductVariants as List<PharmaSkincare.Models.ProductVariant>) ?? new List<PharmaSkincare.Models.ProductVariant>();
+    var activeVariants = allVariants.Where(v => v.IsActive).OrderBy(v => v.DisplayOrder).ToList();
+    bool hasVariants = activeVariants.Any();
+    var firstInStock = activeVariants.FirstOrDefault(v => v.StockQuantity > 0) ?? activeVariants.FirstOrDefault();
+    string sizeLabel = "Select Size";
+}
+
+<div class="container-shop py-5">
+
+    <!-- Breadcrumb -->
+    <nav style="font-size:1.02rem;color:var(--ps-mid);margin-bottom:2rem;">
+        <a asp-controller="Shop" asp-action="Index" style="color:var(--ps-mid);text-decoration:none;">Shop</a>
+        <span class="mx-2">›</span>
+        <span>@Model.DisplayName</span>
+    </nav>
+
+    <div class="row g-5">
+        <!-- Product image / gallery -->
+        <div class="col-lg-5">
+            <div style="background:#F0F7F2;border-radius:18px;padding:clamp(1.25rem,3vw,2.5rem);display:flex;align-items:center;justify-content:center;min-height:clamp(240px,50vw,380px);">
+                @if (hasGallery || !string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    var primarySrc = !string.IsNullOrEmpty(Model.ImageUrl) ? Model.ImageUrl : galleryImages.First().ImageUrl;
+                    <img id="pdMainImg" src="@primarySrc" alt="@Model.DisplayName" style="max-height:340px;object-fit:contain;width:100%;" />
+                }
+                else
+                {
+                    <i class="bi bi-droplet-half" style="font-size:6rem;color:#74C69D;opacity:0.5;"></i>
+                }
+            </div>
+
+            @if (hasGallery)
+            {
+                <div class="d-flex gap-2 mt-3 flex-wrap">
+                    @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                    {
+                        <div class="pd-thumb active" onclick="setMainImg(this, '@Model.ImageUrl')"
+                             style="width:68px;height:68px;border-radius:10px;background:#F0F7F2;border:2px solid var(--ps-primary);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;">
+                            <img src="@Model.ImageUrl" style="width:100%;height:100%;object-fit:cover;" />
+                        </div>
+                    }
+                    @foreach (var img in galleryImages)
+                    {
+                        <div class="pd-thumb" onclick="setMainImg(this, '@img.ImageUrl')"
+                             style="width:68px;height:68px;border-radius:10px;background:#F0F7F2;border:2px solid transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;flex-shrink:0;transition:border-color 0.15s;">
+                            <img src="@img.ImageUrl" style="width:100%;height:100%;object-fit:cover;" />
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Certificates badges -->
+            @if (Model.Certificates.Any(c => c.IsActive))
+            {
+                <div class="mt-3 d-flex flex-wrap gap-2">
+                    @foreach (var cert in Model.Certificates.Where(c => c.IsActive))
+                    {
+                        <span style="background:#D8F3DC;color:#2C6E49;border-radius:50px;font-size:0.96rem;font-weight:600;padding:0.25em 0.75em;letter-spacing:0.04em;">
+                            <i class="bi bi-shield-check me-1"></i>@cert.CertificateName
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Product info -->
+        <div class="col-lg-7">
+            <div style="margin-bottom:0.5rem;">
+                <span style="font-size:0.96rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ps-primary);">
+                    @Model.Subcategory?.Category?.Name
+                </span>
+                <span style="color:#C4C4BE;margin:0 0.5rem;">·</span>
+                <span style="font-size:0.96rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ps-mid);">
+                    @Model.Subcategory?.ProductFormat
+                </span>
+            </div>
+
+            <h1 style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.5rem,4vw,2.4rem);font-weight:700;color:#1A1A1A;line-height:1.1;margin-bottom:0.75rem;">
+                @Model.DisplayName
+            </h1>
+
+            @if (Model.Reviews.Any(r => r.IsApproved))
+            {
+                var avg = Model.Reviews.Where(r => r.IsApproved).Average(r => r.Rating);
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span style="color:#F59E0B;">@string.Concat(Enumerable.Repeat("★", (int)Math.Round(avg)))@string.Concat(Enumerable.Repeat("☆", 5 - (int)Math.Round(avg)))</span>
+                    <span style="font-size:0.96rem;color:var(--ps-mid);">@avg.ToString("F1") · @Model.Reviews.Count(r => r.IsApproved) reviews</span>
+                </div>
+            }
+
+            @if (!hasVariants)
+            {
+                <div style="font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;color:var(--ps-primary);margin-bottom:1.25rem;">
+                    JD @Model.Price.ToString("N2")
+                </div>
+            }
+            else
+            {
+                <div id="pdPriceWrap" style="margin-bottom:1.25rem;">
+                    <div id="pdPriceDisplay" style="font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;color:var(--ps-primary);">
+                        @if (firstInStock != null) { <text>JD @firstInStock.FinalPrice.ToString("N2")</text> }
+                    </div>
+                    <div id="pdDiscountWrap" style="display:@(firstInStock?.HasDiscount == true ? "flex" : "none");align-items:center;gap:0.6rem;margin-top:0.2rem;">
+                        <span id="pdOriginalPrice" style="font-size:1.14rem;color:var(--ps-mid);text-decoration:line-through;">@(firstInStock?.HasDiscount == true ? $"JD {firstInStock.Price:N2}" : "")</span>
+                        <span id="pdDiscountBadge" style="background:#FEF2F2;color:#DC2626;border-radius:50px;font-size:0.96rem;font-weight:700;padding:0.15em 0.6em;">@(firstInStock?.HasDiscount == true ? $"{firstInStock.DiscountPercent}% OFF" : "")</span>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.Subcategory?.Description))
+            {
+                <p style="color:#4B5563;font-size:1.08rem;line-height:1.7;margin-bottom:1.5rem;">@Model.Subcategory.Description</p>
+            }
+
+            <!-- Attributes -->
+            <div class="d-flex flex-wrap gap-2 mb-1.5rem" style="margin-bottom:1.25rem;">
+                @if (!string.IsNullOrEmpty(Model.Size))
+                {
+                    <span style="background:#F5F5F3;border-radius:8px;font-size:0.96rem;padding:0.35rem 0.8rem;color:var(--ps-dark);">
+                        <i class="bi bi-rulers me-1" style="color:var(--ps-primary);"></i>@Model.Size
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(Model.Subcategory?.FormulaType))
+                {
+                    <span style="background:#F5F5F3;border-radius:8px;font-size:0.96rem;padding:0.35rem 0.8rem;color:var(--ps-dark);">
+                        <i class="bi bi-flask me-1" style="color:var(--ps-primary);"></i>@Model.Subcategory.FormulaType
+                    </span>
+                }
+            </div>
+
+            <!-- Variant selector -->
+            @if (hasVariants)
+            {
+                <div style="margin-bottom:1.25rem;">
+                    <label style="font-size:0.88rem;font-weight:700;color:var(--ps-mid);letter-spacing:0.07em;text-transform:uppercase;display:block;margin-bottom:0.6rem;">@sizeLabel</label>
+                    <div class="d-flex flex-wrap gap-2" id="pdVariantBtns">
+                        @foreach (var v in activeVariants)
+                        {
+                            bool isFirst = v == firstInStock;
+                            bool oos = v.StockQuantity <= 0;
+                            string btnStyle = oos
+                                ? "padding:0.45rem 1rem;border-radius:9px;font-size:1.02rem;font-weight:500;cursor:not-allowed;border:1.5px solid #E0E0DC;background:#F5F5F3;color:#B0B0A8;position:relative;"
+                                : isFirst
+                                    ? "padding:0.45rem 1rem;border-radius:9px;font-size:1.02rem;font-weight:500;cursor:pointer;border:1.5px solid var(--ps-primary);background:var(--ps-primary-light);color:var(--ps-primary);transition:all 0.15s;"
+                                    : "padding:0.45rem 1rem;border-radius:9px;font-size:1.02rem;font-weight:500;cursor:pointer;border:1.5px solid var(--ps-border);background:#fff;color:var(--ps-dark);transition:all 0.15s;";
+                            <button type="button"
+                                    class="pd-variant-btn @(isFirst ? "selected" : "") @(oos ? "oos" : "")"
+                                    data-variant-id="@v.ProductVariantId"
+                                    data-price="@v.Price.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-final-price="@v.FinalPrice.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-discount="@(v.DiscountPercent ?? 0)"
+                                    data-stock="@v.StockQuantity"
+                                    @(oos ? "disabled" : "onclick=\"selectVariant(this)\"")
+                                    title="@(oos ? "Out of stock" : v.Size)"
+                                    style="@btnStyle">
+                                @v.Size
+                                @if (oos) { <text> <span style="font-size:0.75rem;display:block;line-height:1;">Out of stock</span></text> }
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Stock + CTA -->
+            @{
+                int displayStock = hasVariants ? (firstInStock?.StockQuantity ?? 0) : Model.StockQuantity;
+            }
+            <div id="pdStockWrap">
+                @if (displayStock > 0 && displayStock <= 5)
+                {
+                    <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:10px;padding:0.55rem 1rem;font-size:0.98rem;color:#DC2626;font-weight:700;margin-bottom:1rem;display:inline-flex;align-items:center;gap:0.5rem;">
+                        <i class="bi bi-fire"></i> <span id="pdStockText">Hurry! Only @displayStock left in stock.</span>
+                    </div>
+                }
+                else if (displayStock > 0)
+                {
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span style="width:8px;height:8px;background:#22C55E;border-radius:50%;display:inline-block;"></span>
+                        <span id="pdStockText" style="font-size:0.96rem;color:#22C55E;font-weight:500;">In Stock — @displayStock available</span>
+                    </div>
+                }
+                else
+                {
+                    <div style="background:#FFF8F0;border:1px solid #FED7AA;border-radius:10px;padding:0.75rem 1rem;font-size:0.984rem;color:#92400E;margin-bottom:1rem;">
+                        <i class="bi bi-exclamation-triangle me-2"></i><span id="pdStockText">Currently out of stock. Check back soon.</span>
+                    </div>
+                }
+            </div>
+
+            @if (displayStock > 0)
+            {
+                <div class="d-flex flex-wrap gap-3 align-items-center" id="pdCtaWrap">
+                    <form asp-controller="Cart" asp-action="Add" method="post" class="d-flex gap-2 align-items-center" id="pdAddForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="productId" value="@Model.ProductId" />
+                        <input type="hidden" name="returnUrl" value="@Url.Action("ProductDetails", new { id = Model.ProductId })" />
+                        @if (hasVariants)
+                        {
+                            <input type="hidden" name="variantId" id="pdVariantIdInput" value="@firstInStock?.ProductVariantId" />
+                        }
+                        <div class="d-flex align-items-center" style="border:1.5px solid var(--ps-border);border-radius:10px;overflow:hidden;">
+                            <button type="button" onclick="stepQty(-1)" style="width:38px;height:44px;border:none;background:#F5F5F3;font-size:1.15rem;cursor:pointer;font-weight:600;">−</button>
+                            <input type="number" name="qty" value="1" min="1" max="@displayStock" id="pdQty"
+                                   style="width:52px;height:44px;border:none;text-align:center;font-weight:600;font-size:1.14rem;" />
+                            <button type="button" onclick="stepQty(1)" style="width:38px;height:44px;border:none;background:#F5F5F3;font-size:1.15rem;cursor:pointer;font-weight:600;">+</button>
+                        </div>
+                        <button type="submit" class="btn-ps" style="padding:0.7rem 1.75rem;font-size:1.08rem;">
+                            <i class="bi bi-basket2-fill me-2"></i>Add to Basket
+                        </button>
+                    </form>
+
+                    @if (User.IsInRole("Customer"))
+                    {
+                        <form asp-controller="Wishlist" asp-action="Toggle" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="productId" value="@Model.ProductId" />
+                            <input type="hidden" name="returnUrl" value="@Url.Action("ProductDetails", new { id = Model.ProductId })" />
+                            <button type="submit" title="@(isWishlisted ? "Remove from Wishlist" : "Save to Wishlist")"
+                                    style="width:44px;height:44px;border:1.5px solid @(isWishlisted ? "#DC2626" : "var(--ps-border)");border-radius:10px;background:@(isWishlisted ? "#FEF2F2" : "#fff");cursor:pointer;font-size:1.15rem;color:#DC2626;display:flex;align-items:center;justify-content:center;transition:all 0.15s;"
+                                    onmouseover="this.style.background='#FEF2F2';this.style.borderColor='#DC2626'"
+                                    onmouseout="this.style.background='@(isWishlisted ? "#FEF2F2" : "#fff")';this.style.borderColor='@(isWishlisted ? "#DC2626" : "var(--ps-border)")'">
+                                <i class="bi @(isWishlisted ? "bi-heart-fill" : "bi-heart")"></i>
+                            </button>
+                        </form>
+                    }
+                </div>
+            }
+            else if (User.IsInRole("Customer"))
+            {
+                <div class="mt-2">
+                    <form asp-controller="Wishlist" asp-action="Toggle" method="post" style="display:inline;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="productId" value="@Model.ProductId" />
+                        <input type="hidden" name="returnUrl" value="@Url.Action("ProductDetails", new { id = Model.ProductId })" />
+                        <button type="submit" class="btn-outline-ps" style="font-size:0.96rem;padding:0.5rem 1.1rem;">
+                            <i class="bi @(isWishlisted ? "bi-heart-fill" : "bi-heart") me-1" style="color:#DC2626;"></i>
+                            @(isWishlisted ? "Remove from Wishlist" : "Save to Wishlist")
+                        </button>
+                    </form>
+                </div>
+            }
+
+            <!-- Endorsements -->
+            @if (Model.Endorsements.Any(e => e.IsActive))
+            {
+                <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--ps-border);">
+                    <div style="font-size:0.96rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ps-mid);margin-bottom:0.6rem;">
+                        <i class="bi bi-award me-1" style="color:#F59E0B;"></i>Doctor Endorsed
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var e in Model.Endorsements.Where(en => en.IsActive))
+                        {
+                            <span style="background:#fff;border:1px solid var(--ps-border);border-radius:50px;font-size:0.96rem;padding:0.3em 0.85em;color:var(--ps-dark);">
+                                Dr. @e.Doctor?.Name
+                            </span>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Guarantee chips -->
+            <div class="d-flex flex-wrap gap-3 mt-3" style="font-size:0.96rem;color:var(--ps-mid);">
+                <span><i class="bi bi-truck me-1 text-success"></i> Free delivery over JD 40</span>
+                <span><i class="bi bi-arrow-counterclockwise me-1 text-success"></i> 30-day returns</span>
+                <span><i class="bi bi-lock me-1 text-success"></i> Secure checkout</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Medical disclaimer -->
+    <div style="margin-top:2.5rem;background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:1rem 1.25rem;display:flex;align-items:flex-start;gap:0.75rem;">
+        <i class="bi bi-info-circle-fill" style="color:#D97706;font-size:1.3rem;flex-shrink:0;margin-top:0.1rem;"></i>
+        <div style="font-size:1rem;color:#92400E;line-height:1.6;">
+            <strong>Medical Disclaimer:</strong> This product is intended for topical use only and is not a medicine or medical device. It is not intended to diagnose, treat, cure, or prevent any disease or medical condition. Always consult a qualified healthcare professional before use if you have a medical condition, are pregnant, or are taking medication. Keep out of reach of children.
+        </div>
+    </div>
+
+    <!-- Reviews section -->
+    @if (Model.Reviews.Any(r => r.IsApproved))
+    {
+        <div style="margin-top:4rem;padding-top:3rem;border-top:1px solid var(--ps-border);">
+            <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin-bottom:1.5rem;">Customer Reviews</h2>
+            <div class="row g-3">
+                @foreach (var r in Model.Reviews.Where(r => r.IsApproved))
+                {
+                    <div class="col-md-6">
+                        <div style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem;">
+                            <div class="d-flex align-items-center gap-3 mb-2">
+                                <div style="width:36px;height:36px;background:var(--ps-primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ps-primary);font-size:1.02rem;">
+                                    @r.Customer?.FirstName.FirstOrDefault()
+                                </div>
+                                <div>
+                                    <div style="font-weight:600;font-size:1.02rem;">@r.Customer?.FullName</div>
+                                    <div style="color:#F59E0B;font-size:0.96rem;">@string.Concat(Enumerable.Repeat("★", r.Rating))@string.Concat(Enumerable.Repeat("☆", 5 - r.Rating))</div>
+                                </div>
+                                <div style="margin-left:auto;font-size:0.96rem;color:var(--ps-mid);">@r.CreatedDate.ToString("dd MMM yyyy")</div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(r.Comment))
+                            {
+                                <p style="font-size:0.984rem;color:#4B5563;margin:0;line-height:1.6;">@r.Comment</p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Write a review -->
+    @if (User.IsInRole("Customer"))
+    {
+        @if (hasPurchased)
+        {
+            <div style="margin-top:3rem;background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.75rem;">
+                <h4 style="font-family:'Cormorant Garamond',serif;font-weight:700;margin-bottom:1rem;">Write a Review</h4>
+                <form asp-action="SubmitReview" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="productId" value="@Model.ProductId" />
+                    <div class="mb-3">
+                        <label class="form-label">Your Rating</label>
+                        <div class="d-flex gap-2">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="rating" value="@i" id="star@i" @(i == 5 ? "checked" : "") />
+                                    <label class="form-check-label" for="star@i" style="font-size:1.02rem;">@i ★</label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Comment <span class="text-muted">(optional)</span></label>
+                        <textarea name="comment" class="form-control" rows="3" placeholder="Share your experience…" style="border-radius:10px;"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="border-radius:9px;font-size:1.02rem;padding:0.5rem 1.5rem;">
+                        <i class="bi bi-star me-1"></i>Submit Review
+                    </button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <div style="margin-top:3rem;background:#F9FAFB;border:1px solid var(--ps-border);border-radius:16px;padding:1.5rem;display:flex;align-items:center;gap:1rem;">
+                <i class="bi bi-bag-check" style="font-size:1.75rem;color:var(--ps-mid);flex-shrink:0;"></i>
+                <div>
+                    <div style="font-weight:600;font-size:1.05rem;margin-bottom:0.2rem;">Purchase required to review</div>
+                    <div style="font-size:0.984rem;color:var(--ps-mid);">Reviews are only available to verified buyers. Purchase this product to share your experience.</div>
+                </div>
+            </div>
+        }
+    }
+    else if (!User.Identity?.IsAuthenticated ?? true)
+    {
+        <div style="margin-top:3rem;background:#F9FAFB;border:1px solid var(--ps-border);border-radius:16px;padding:1.5rem;text-align:center;">
+            <i class="bi bi-star" style="font-size:2rem;color:var(--ps-mid);display:block;margin-bottom:0.75rem;"></i>
+            <p style="color:var(--ps-mid);margin-bottom:1.25rem;font-size:1.02rem;">Sign in and purchase this product to leave a review.</p>
+            <a asp-controller="Account" asp-action="Login" class="btn-ps" style="padding:0.6rem 1.5rem;">Sign In</a>
+        </div>
+    }
+
+    <!-- Related Products -->
+    @if (ViewBag.RelatedProducts is List<PharmaSkincare.Models.Product> related && related.Any())
+    {
+        <div style="margin-top:4rem;">
+            <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin-bottom:1.5rem;">You May Also Like</h2>
+            <div class="row g-3 g-md-4">
+                @foreach (var rp in related)
+                {
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="product-card">
+                            <a href="@Url.Action("ProductDetails", new { id = rp.ProductId })" style="text-decoration:none;color:inherit;">
+                                <div class="product-card-img" style="height:160px;">
+                                    @if (!string.IsNullOrEmpty(rp.ImageUrl))
+                                    {
+                                        <img src="@rp.ImageUrl" alt="@rp.DisplayName" />
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-droplet-half" style="font-size:2.5rem;color:#74C69D;opacity:0.6;"></i>
+                                    }
+                                </div>
+                            </a>
+                            <div class="product-card-body">
+                                <div class="product-card-cat">@rp.Subcategory?.Category?.Name</div>
+                                <a href="@Url.Action("ProductDetails", new { id = rp.ProductId })" style="text-decoration:none;">
+                                    <div class="product-card-name" style="font-size:1.2rem;">@rp.DisplayName</div>
+                                </a>
+                                <div class="product-card-footer">
+                                    <div class="product-price" style="font-size:1.15rem;">JD @rp.Price.ToString("N2")</div>
+                                    <a href="@Url.Action("ProductDetails", new { id = rp.ProductId })" class="btn-view-product">View</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+    function stepQty(delta) {
+        const inp = document.getElementById('pdQty');
+        if (!inp) return;
+        let v = parseInt(inp.value, 10) + delta;
+        v = Math.max(parseInt(inp.min, 10), Math.min(parseInt(inp.max, 10), v));
+        inp.value = v;
+    }
+    function setMainImg(thumb, src) {
+        document.getElementById('pdMainImg').src = src;
+        document.querySelectorAll('.pd-thumb').forEach(t => {
+            t.style.borderColor = 'transparent';
+            t.classList.remove('active');
+        });
+        thumb.style.borderColor = 'var(--ps-primary)';
+        thumb.classList.add('active');
+    }
+
+    function selectVariant(btn) {
+        // Update button styles
+        document.querySelectorAll('.pd-variant-btn').forEach(b => {
+            b.classList.remove('selected');
+            b.style.borderColor = 'var(--ps-border)';
+            b.style.background = '#fff';
+            b.style.color = 'var(--ps-dark)';
+        });
+        btn.classList.add('selected');
+        btn.style.borderColor = 'var(--ps-primary)';
+        btn.style.background = 'var(--ps-primary-light)';
+        btn.style.color = 'var(--ps-primary)';
+
+        const variantId  = btn.dataset.variantId;
+        const price      = parseFloat(btn.dataset.price);
+        const finalPrice = parseFloat(btn.dataset.finalPrice);
+        const discount   = parseInt(btn.dataset.discount, 10);
+        const stock      = parseInt(btn.dataset.stock, 10);
+
+        // Update hidden variant input
+        const vi = document.getElementById('pdVariantIdInput');
+        if (vi) vi.value = variantId;
+
+        // Update price display
+        const pd = document.getElementById('pdPriceDisplay');
+        if (pd) pd.textContent = 'JD ' + finalPrice.toFixed(2);
+
+        const dw = document.getElementById('pdDiscountWrap');
+        if (dw) {
+            if (discount > 0) {
+                document.getElementById('pdOriginalPrice').textContent = 'JD ' + price.toFixed(2);
+                document.getElementById('pdDiscountBadge').textContent = discount + '% OFF';
+                dw.style.display = 'flex';
+                dw.style.alignItems = 'center';
+                dw.style.gap = '0.6rem';
+            } else {
+                dw.style.display = 'none';
+            }
+        }
+
+        // Update stock + qty max
+        const qty = document.getElementById('pdQty');
+        const cta = document.getElementById('pdCtaWrap');
+        const stockWrap = document.getElementById('pdStockWrap');
+
+        if (qty) {
+            qty.max = stock;
+            qty.value = Math.min(parseInt(qty.value, 10), Math.max(1, stock));
+        }
+
+        if (stock > 0 && stock <= 5) {
+            stockWrap.innerHTML = '<div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:10px;padding:0.55rem 1rem;font-size:0.98rem;color:#DC2626;font-weight:700;margin-bottom:1rem;display:inline-flex;align-items:center;gap:0.5rem;"><i class="bi bi-fire"></i> Hurry! Only ' + stock + ' left in stock.</div>';
+            if (cta) cta.style.display = '';
+        } else if (stock > 0) {
+            stockWrap.innerHTML = '<div class="d-flex align-items-center gap-2 mb-3"><span style="width:8px;height:8px;background:#22C55E;border-radius:50%;display:inline-block;"></span><span style="font-size:0.96rem;color:#22C55E;font-weight:500;">In Stock — ' + stock + ' available</span></div>';
+            if (cta) cta.style.display = '';
+        } else {
+            stockWrap.innerHTML = '<div style="background:#FFF8F0;border:1px solid #FED7AA;border-radius:10px;padding:0.75rem 1rem;font-size:0.984rem;color:#92400E;margin-bottom:1rem;"><i class="bi bi-exclamation-triangle me-2"></i>Currently out of stock. Check back soon.</div>';
+            if (cta) cta.style.display = 'none';
+        }
+    }
+    </script>
+    <style>
+    .pd-variant-btn:hover { border-color: var(--ps-primary) !important; background: var(--ps-primary-light) !important; color: var(--ps-primary) !important; }
+    </style>
+}

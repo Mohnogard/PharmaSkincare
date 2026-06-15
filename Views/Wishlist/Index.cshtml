@@ -1,0 +1,85 @@
+@model List<PharmaSkincare.Models.WishlistItem>
+@{ ViewData["Title"] = "My Wishlist"; Layout = "_ShopLayout"; }
+
+<div class="container-shop" style="padding-top:3rem;padding-bottom:5rem;">
+    <div class="d-flex align-items-end justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h1 style="font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:700;margin-bottom:0.25rem;">My Wishlist</h1>
+            <p style="color:var(--ps-mid);margin:0;">@Model.Count item@(Model.Count!=1?"s":"")</p>
+        </div>
+        <a asp-controller="Shop" asp-action="Index" style="font-size:1.08rem;color:var(--ps-mid);text-decoration:none;">
+            <i class="bi bi-arrow-left me-1"></i>Continue Shopping
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div style="text-align:center;padding:5rem 0;">
+            <i class="bi bi-heart" style="font-size:4rem;color:#C4C4BE;display:block;margin-bottom:1.5rem;"></i>
+            <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;margin-bottom:0.75rem;">Your wishlist is empty</h3>
+            <p style="color:var(--ps-mid);margin-bottom:2rem;">Save products you love to revisit them later.</p>
+            <a asp-controller="Shop" asp-action="Index" class="btn-ps">Discover Products</a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3 g-md-4">
+            @foreach (var item in Model)
+            {
+                <div class="col-sm-6 col-lg-4 col-xl-3">
+                    <div class="product-card">
+                        <a asp-controller="Shop" asp-action="ProductDetails" asp-route-id="@item.ProductId" style="text-decoration:none;color:inherit;">
+                            <div class="product-card-img">
+                                @if (!string.IsNullOrEmpty(item.Product?.ImageUrl))
+                                {
+                                    <img src="@item.Product.ImageUrl" alt="@item.Product.DisplayName" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-droplet-half" style="font-size:3.5rem;color:#74C69D;opacity:0.5;"></i>
+                                }
+                            </div>
+                        </a>
+                        <div class="product-card-body">
+                            <div class="product-card-cat">@item.Product?.Subcategory?.Category?.Name</div>
+                            <a asp-controller="Shop" asp-action="ProductDetails" asp-route-id="@item.ProductId" style="text-decoration:none;">
+                                <div class="product-card-name">@item.Product?.DisplayName</div>
+                            </a>
+                            <div style="font-size:0.975rem;color:var(--ps-mid);margin-bottom:0.5rem;">
+                                Added @item.AddedDate.ToString("dd MMM yyyy")
+                            </div>
+                            <div class="product-card-footer">
+                                <div class="product-price">JD @item.Product?.Price.ToString("N2")</div>
+                                <div class="d-flex gap-1">
+                                    @if (item.Product?.StockQuantity > 0)
+                                    {
+                                        <form asp-controller="Cart" asp-action="Add" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="productId" value="@item.ProductId" />
+                                            <input type="hidden" name="qty" value="1" />
+                                            <button type="submit" class="btn-view-product" style="border:none;cursor:pointer;">
+                                                <i class="bi bi-basket me-1"></i>Add
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="out-of-stock-badge">Sold out</span>
+                                    }
+                                    <form asp-controller="Wishlist" asp-action="Toggle" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="productId" value="@item.ProductId" />
+                                        <button type="submit" style="width:36px;height:36px;background:none;border:1px solid var(--ps-border);border-radius:8px;cursor:pointer;color:#dc2626;font-size:1.08rem;"
+                                                title="Remove from wishlist">
+                                            <i class="bi bi-heart-fill"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

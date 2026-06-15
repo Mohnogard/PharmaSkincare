@@ -1,0 +1,56 @@
+@model IEnumerable<PharmaSkincare.Models.PharmacyPartner>
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Pharmacy Partners"; }
+
+<div class="page-header">
+    <div><h1><i class="bi bi-building me-2" style="color:var(--ps-primary);"></i>Pharmacy Partners</h1></div>
+    <a asp-action="CreatePartner" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Add Partner</a>
+</div>
+
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Pharmacy</th><th>Contact</th><th>Location</th><th>Commission</th><th>Agreement</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+            @foreach (var p in Model)
+            {
+                var sc = p.Status switch {
+                    PartnershipStatus.Active => "bg-success",
+                    PartnershipStatus.Pending => "bg-warning text-dark",
+                    PartnershipStatus.Inactive => "bg-secondary",
+                    _ => "bg-danger"
+                };
+                <tr>
+                    <td>
+                        <div style="font-weight:600;font-size:1.05rem;">@p.Name</div>
+                        @if (!string.IsNullOrEmpty(p.Email)) { <small class="text-muted">@p.Email</small> }
+                    </td>
+                    <td>
+                        <div class="small">@(p.ContactPerson ?? "—")</div>
+                        @if (!string.IsNullOrEmpty(p.Phone)) { <small class="text-muted">@p.Phone</small> }
+                    </td>
+                    <td class="small text-muted">@p.City, @p.Country</td>
+                    <td><span class="badge bg-primary badge-status">@p.CommissionRate%</span></td>
+                    <td class="small">
+                        <div>From: @p.AgreementDate?.ToString("dd MMM yy")</div>
+                        @if (p.AgreementExpiry.HasValue)
+                        {
+                            <div class="text-muted">Until: @p.AgreementExpiry.Value.ToString("dd MMM yy")
+                                @if (p.AgreementExpiry < DateTime.UtcNow) { <span class="text-danger">(Expired)</span> }
+                            </div>
+                        }
+                    </td>
+                    <td><span class="badge badge-status @sc">@p.Status</span></td>
+                    <td>
+                        <a asp-action="EditPartner" asp-route-id="@p.PharmacyPartnerId" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-building fs-1 d-block mb-2 opacity-25"></i>No partners yet.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,521 @@
+@model List<PharmaSkincare.Models.Subcategory>
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Shop"; Layout = "_ShopLayout"; }
+
+@{
+    var searchTerm  = ViewBag.SearchTerm  as string ?? "";
+    var catFilter   = ViewBag.CategoryFilter as int?;
+    var formatFilter= ViewBag.FormatFilter as string ?? "";
+    bool isFiltered = !string.IsNullOrWhiteSpace(searchTerm) || catFilter.HasValue || !string.IsNullOrWhiteSpace(formatFilter);
+    int totalCount  = ViewBag.TotalCount  ?? 0;
+    int totalPages  = ViewBag.TotalPages  ?? 1;
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    var filterCats  = ViewBag.Categories  as List<Category> ?? new();
+}
+
+@if (!isFiltered)
+{
+    <style>
+        /* ── Hero carousel media backgrounds ── */
+        .slide-bg-video {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; z-index: 0;
+        }
+        .slide-bg-img {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; z-index: 0;
+        }
+        /* Subtle camera/play hint shown only when placeholder has no src */
+        .slide-media-hint {
+            position: absolute; inset: 0; z-index: 1;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 0.5rem; opacity: 0.12; pointer-events: none;
+        }
+        .slide-media-hint i { font-size: 4rem; color: #fff; }
+        .slide-media-hint span { font-size: 1.02rem; color: #fff; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+    </style>
+
+    <!-- ── Hero Carousel ── -->
+    <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5500">
+        <div class="carousel-indicators" style="bottom:1.5rem;">
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" style="width:32px;height:4px;border-radius:2px;background:#fff;border:none;opacity:0.5;"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" style="width:32px;height:4px;border-radius:2px;background:#fff;border:none;opacity:0.5;"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2" style="width:32px;height:4px;border-radius:2px;background:#fff;border:none;opacity:0.5;"></button>
+        </div>
+        <div class="carousel-inner">
+
+            <!-- ── Slide 1 — VIDEO placeholder ── -->
+            <div class="carousel-item active" style="position:relative;overflow:hidden;background:#1B4332;">
+
+                <video class="slide-bg-video" autoplay muted loop playsinline>
+                    <source src="/assets/videos/video6.webm" type="video/webm">
+                </video>
+
+                <!-- Colour overlay for readability — adjust opacity if your video is bright -->
+                <div style="position:absolute;inset:0;z-index:2;background:linear-gradient(135deg,rgba(27,67,50,0.82) 0%,rgba(44,110,73,0.62) 55%,rgba(58,138,92,0.5) 100%);"></div>
+                <!-- Slide content -->
+                <div style="position:relative;z-index:3;color:#fff;padding:clamp(2.5rem,7vw,5.5rem) 0 clamp(2rem,5vw,4.5rem);">
+                    <div class="container-shop">
+                        <div class="row align-items-center g-5">
+                            <div class="col-lg-7">
+                                <div style="font-size:0.96rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:1rem;">Pharmaceutical-grade skincare</div>
+                                <h1 style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.75rem,5vw,3.75rem);font-weight:700;line-height:1.05;margin-bottom:1.25rem;letter-spacing:-0.01em;">
+                                    Science-backed.<br/>Clinician-endorsed.
+                                </h1>
+                                <p style="font-size:1.05rem;color:rgba(255,255,255,0.75);line-height:1.65;max-width:500px;margin-bottom:2.25rem;">
+                                    Every product is formulated to pharmaceutical standards and endorsed by medical professionals — so you can trust what you put on your skin.
+                                </p>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <a href="#products" style="background:#fff;color:#1B4332;border-radius:12px;padding:0.85rem 2rem;font-weight:700;font-size:1.2rem;text-decoration:none;">Shop Now</a>
+                                    <a asp-action="Recommendations" style="border:1.5px solid rgba(255,255,255,0.5);color:#fff;border-radius:12px;padding:0.85rem 1.75rem;font-weight:500;font-size:1.2rem;text-decoration:none;">Clinician Picks</a>
+                                </div>
+                            </div>
+                            <div class="col-lg-5 d-none d-lg-flex justify-content-center">
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;width:100%;max-width:380px;">
+                                    @foreach (var (icon, label, sub) in new[]{("bi-award","Clinically Tested","Every formula validated"),("bi-shield-check","Doctor Approved","By leading clinicians"),("bi-leaf","Clean Formula","No harsh chemicals"),("bi-truck","Free Delivery","On orders over JD 40")})
+                                    {
+                                        <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:1.25rem;text-align:center;">
+                                            <i class="bi @icon" style="font-size:1.75rem;color:rgba(255,255,255,0.75);display:block;margin-bottom:0.6rem;"></i>
+                                            <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;">@label</div>
+                                            <div style="font-size:0.96rem;color:rgba(255,255,255,0.5);margin-top:0.2rem;">@sub</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Slide 2 — IMAGE placeholder ── -->
+            <div class="carousel-item" style="position:relative;overflow:hidden;background:#0f2942;">
+
+                <video class="slide-bg-video" autoplay muted loop playsinline>
+                    <source src="/assets/videos/video10.mp4" type="video/mp4">
+                </video>
+
+                <!-- Colour overlay -->
+                <div style="position:absolute;inset:0;z-index:2;background:linear-gradient(135deg,rgba(15,41,66,0.88) 0%,rgba(26,74,122,0.72) 50%,rgba(37,99,235,0.58) 100%);"></div>
+                <!-- Slide content -->
+                <div style="position:relative;z-index:3;color:#fff;padding:clamp(2.5rem,7vw,5.5rem) 0 clamp(2rem,5vw,4.5rem);">
+                    <div class="container-shop">
+                        <div class="row align-items-center g-5">
+                            <div class="col-lg-6">
+                                <div style="font-size:0.96rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:1rem;">Trusted by professionals</div>
+                                <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.6rem,5vw,3.5rem);font-weight:700;line-height:1.05;margin-bottom:1.25rem;">
+                                    Endorsed by<br/>Consultant<br/>Dermatologists
+                                </h2>
+                                <p style="font-size:1.05rem;color:rgba(255,255,255,0.75);line-height:1.65;max-width:460px;margin-bottom:2.25rem;">
+                                    Our range is reviewed and recommended by board-certified dermatologists, ensuring every formula meets the highest clinical standards.
+                                </p>
+                                <a asp-action="Recommendations" style="background:#fff;color:#1a4a7a;border-radius:12px;padding:0.85rem 2rem;font-weight:700;font-size:1.2rem;text-decoration:none;">View Clinician Picks</a>
+                            </div>
+                            <div class="col-lg-6 d-none d-lg-block">
+                                <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:2rem;">
+                                    <div style="font-size:0.96rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:1.5rem;">What our clinicians say</div>
+                                    <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;font-style:italic;color:#fff;line-height:1.5;margin-bottom:1.25rem;">
+                                        "The formulation quality matches what I'd expect from a pharmaceutical-grade product. I recommend it with confidence."
+                                    </div>
+                                    <div style="font-size:1.02rem;color:rgba(255,255,255,0.65);">— Dr. Layla Al-Khatib, Consultant Dermatologist</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Slide 3 — IMAGE placeholder ── -->
+            <div class="carousel-item" style="position:relative;overflow:hidden;background:#78350f;">
+
+                <video class="slide-bg-video" autoplay muted loop playsinline>
+                    <source src="/assets/videos/video8.mp4" type="video/mp4">
+                </video>
+
+                <!-- Colour overlay -->
+                <div style="position:absolute;inset:0;z-index:2;background:linear-gradient(135deg,rgba(120,53,15,0.88) 0%,rgba(180,83,9,0.72) 50%,rgba(217,119,6,0.58) 100%);"></div>
+                <!-- Slide content -->
+                <div style="position:relative;z-index:3;color:#fff;padding:clamp(2.5rem,7vw,5.5rem) 0 clamp(2rem,5vw,4.5rem);">
+                    <div class="container-shop">
+                        <div class="row align-items-center g-5">
+                            <div class="col-lg-6">
+                                <div style="font-size:0.96rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:1rem;">Delivery offer</div>
+                                <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.6rem,5vw,3.5rem);font-weight:700;line-height:1.05;margin-bottom:1.25rem;">
+                                    Free Delivery<br/>in Jordan<br/>Over JD 40
+                                </h2>
+                                <p style="font-size:1.05rem;color:rgba(255,255,255,0.8);line-height:1.65;max-width:460px;margin-bottom:2.25rem;">
+                                    Build your skincare routine and enjoy free delivery across the UK. Discreet packaging, 30-day returns guaranteed.
+                                </p>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <a href="#products" style="background:#fff;color:#78350f;border-radius:12px;padding:0.85rem 2rem;font-weight:700;font-size:1.2rem;text-decoration:none;">Shop the Range</a>
+                                    <a asp-controller="Home" asp-action="Support" style="border:1.5px solid rgba(255,255,255,0.5);color:#fff;border-radius:12px;padding:0.85rem 1.75rem;font-weight:500;font-size:1.2rem;text-decoration:none;">Returns Policy</a>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 d-none d-lg-flex justify-content-center">
+                                <div style="text-align:center;">
+                                    <div style="display:inline-flex;flex-direction:column;gap:1.25rem;">
+                                        @foreach (var (icon, desc) in new[]{("bi-truck","Free delivery on orders over JD 40"),("bi-arrow-counterclockwise","30-day hassle-free returns"),("bi-box-seam","Discreet pharmaceutical packaging"),("bi-shield-check","Secure checkout — always")})
+                                        {
+                                            <div style="display:flex;align-items:center;gap:1rem;background:rgba(255,255,255,0.1);border-radius:14px;padding:1rem 1.5rem;">
+                                                <i class="bi @icon" style="font-size:1.5rem;color:rgba(255,255,255,0.85);flex-shrink:0;"></i>
+                                                <span style="font-size:1.14rem;font-weight:500;">@desc</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev" style="width:56px;z-index:10;">
+            <span style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+                <i class="bi bi-chevron-left" style="color:#fff;font-size:1.1rem;"></i>
+            </span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next" style="width:56px;z-index:10;">
+            <span style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+                <i class="bi bi-chevron-right" style="color:#fff;font-size:1.1rem;"></i>
+            </span>
+        </button>
+    </div>
+
+    <!-- ── Category strip ── -->
+    @if (ViewBag.NavCategories is IEnumerable<PharmaSkincare.Models.Category> cats && cats.Any())
+    {
+        <section style="background:#fff;border-bottom:1px solid var(--ps-border);padding:1.25rem 0;">
+            <div class="container-shop">
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                    <span style="font-size:0.975rem;font-weight:600;color:var(--ps-mid);margin-right:0.5rem;text-transform:uppercase;letter-spacing:0.07em;">Browse:</span>
+                    <a asp-action="Index" style="background:var(--ps-primary);color:#fff;border-radius:50px;padding:0.4rem 1rem;font-size:1.05rem;font-weight:500;text-decoration:none;">All</a>
+                    @foreach (var cat in cats)
+                    {
+                        <a asp-action="Index" asp-route-categoryId="@cat.CategoryId"
+                           style="background:#F5F5F3;color:var(--ps-dark);border-radius:50px;padding:0.4rem 1rem;font-size:1.05rem;font-weight:500;text-decoration:none;transition:all 0.15s;"
+                           onmouseover="this.style.background='var(--ps-primary-light)';this.style.color='var(--ps-primary)'"
+                           onmouseout="this.style.background='#F5F5F3';this.style.color='var(--ps-dark)'">
+                            @cat.Name
+                        </a>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+
+    <!-- ── Editorial Banner 1: Split hero ── -->
+    <section style="padding:4rem 0;background:#fff;">
+        <div class="container-shop">
+            <div class="row g-0 align-items-stretch" style="border-radius:20px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.07);">
+                <!-- Image side -->
+                <div class="col-lg-6" style="min-height:clamp(240px,50vw,420px);background:linear-gradient(160deg,#1B4332 0%,#3A8A5C 60%,#74C69D 100%);position:relative;display:flex;align-items:flex-end;padding:2.5rem;">
+                    <div style="position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=900&q=80');background-size:cover;background-position:center;opacity:0.22;"></div>
+                    <div style="position:relative;z-index:1;">
+                        <span style="display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:50px;font-size:0.96rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#fff;padding:0.3rem 0.9rem;margin-bottom:1rem;">Featured Collection</span>
+                        <h2 style="font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:700;color:#fff;line-height:1.1;margin-bottom:0.75rem;">Your Skin,<br/>Scientifically Treated</h2>
+                        <p style="font-size:1.08rem;color:rgba(255,255,255,0.75);max-width:340px;line-height:1.6;margin-bottom:0;">Advanced formulas designed to deliver real, measurable results.</p>
+                    </div>
+                </div>
+                <!-- Text side -->
+                <div class="col-lg-6" style="background:#F8F7F4;padding:clamp(1.5rem,4vw,3rem);display:flex;flex-direction:column;justify-content:center;">
+                    <div style="font-size:0.96rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--ps-primary);margin-bottom:1.25rem;">Why PharmaSkincare</div>
+                    <div class="d-flex flex-column gap-4">
+                        <div class="d-flex gap-3 align-items-start">
+                            <div style="width:44px;height:44px;background:var(--ps-primary-light);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="bi bi-microscope" style="color:var(--ps-primary);font-size:1.1rem;"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:1.14rem;margin-bottom:0.2rem;">Pharmaceutical Precision</div>
+                                <div style="font-size:0.984rem;color:var(--ps-mid);line-height:1.5;">Every formula is manufactured under pharmaceutical-grade conditions — the same standards as medicines.</div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-3 align-items-start">
+                            <div style="width:44px;height:44px;background:#EFF6FF;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="bi bi-person-badge" style="color:#1976d2;font-size:1.1rem;"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:1.14rem;margin-bottom:0.2rem;">Clinician Endorsed</div>
+                                <div style="font-size:0.984rem;color:var(--ps-mid);line-height:1.5;">Our products are reviewed and endorsed by consultant dermatologists and medical doctors.</div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-3 align-items-start">
+                            <div style="width:44px;height:44px;background:#FFF9EC;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="bi bi-leaf" style="color:#d97706;font-size:1.1rem;"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:1.14rem;margin-bottom:0.2rem;">Clean & Transparent</div>
+                                <div style="font-size:0.984rem;color:var(--ps-mid);line-height:1.5;">Full ingredient disclosure. No parabens, no sulphates, no compromises.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <a asp-controller="Shop" asp-action="ShopAll" class="btn-ps" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.7rem 1.5rem;text-decoration:none;">
+                            Explore the Range <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Editorial Banner 2: Three-column feature cards ── -->
+    <section style="padding:1rem 0 3.5rem;background:#fff;">
+        <div class="container-shop">
+            <div class="row g-4">
+                <!-- Card 1 -->
+                <div class="col-12 col-sm-6 col-md-4">
+                    <div style="border-radius:16px;overflow:hidden;position:relative;height:clamp(200px,40vw,280px);background:linear-gradient(145deg,#0f3524,#2C6E49);display:flex;flex-direction:column;justify-content:flex-end;padding:1.75rem;">
+                        <div style="position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600&q=80');background-size:cover;background-position:center;opacity:0.18;"></div>
+                        <div style="position:relative;z-index:1;">
+                            <span style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:50px;font-size:0.96rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.8);padding:0.25rem 0.75rem;margin-bottom:0.85rem;">Hydration</span>
+                            <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:0.5rem;line-height:1.15;">Intense<br/>Moisture Repair</h3>
+                            <p style="font-size:0.96rem;color:rgba(255,255,255,0.65);line-height:1.5;margin-bottom:1rem;">Clinical hyaluronic complex. Visible results in 7 days.</p>
+                            <a asp-controller="Shop" asp-action="ShopAll" asp-route-format="Cream" class="btn-view-product" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:#fff;font-size:0.96rem;">Shop Now →</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 2 -->
+                <div class="col-12 col-sm-6 col-md-4">
+                    <div style="border-radius:16px;overflow:hidden;position:relative;height:clamp(200px,40vw,280px);background:linear-gradient(145deg,#92400E,#d97706);display:flex;flex-direction:column;justify-content:flex-end;padding:1.75rem;">
+                        <div style="position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=600&q=80');background-size:cover;background-position:center;opacity:0.18;"></div>
+                        <div style="position:relative;z-index:1;">
+                            <span style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:50px;font-size:0.96rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.8);padding:0.25rem 0.75rem;margin-bottom:0.85rem;">Anti-Ageing</span>
+                            <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:0.5rem;line-height:1.15;">Retinol &amp;<br/>Peptide Serums</h3>
+                            <p style="font-size:0.96rem;color:rgba(255,255,255,0.65);line-height:1.5;margin-bottom:1rem;">Medical-grade actives. Dermatologist formulated.</p>
+                            <a asp-controller="Shop" asp-action="ShopAll" asp-route-format="Serum" class="btn-view-product" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:#fff;font-size:0.96rem;">Shop Now →</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 3 -->
+                <div class="col-12 col-sm-6 col-md-4">
+                    <div style="border-radius:16px;overflow:hidden;position:relative;height:clamp(200px,40vw,280px);background:linear-gradient(145deg,#1a3a5c,#1976d2);display:flex;flex-direction:column;justify-content:flex-end;padding:1.75rem;">
+                        <div style="position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&q=80');background-size:cover;background-position:center;opacity:0.18;"></div>
+                        <div style="position:relative;z-index:1;">
+                            <span style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:50px;font-size:0.96rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.8);padding:0.25rem 0.75rem;margin-bottom:0.85rem;">Sun Care</span>
+                            <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:0.5rem;line-height:1.15;">SPF &amp;<br/>UV Protection</h3>
+                            <p style="font-size:0.96rem;color:rgba(255,255,255,0.65);line-height:1.5;margin-bottom:1rem;">Broad spectrum UVA/UVB. Lightweight, non-greasy finish.</p>
+                            <a asp-controller="Shop" asp-action="ShopAll" asp-route-format="Gel" class="btn-view-product" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:#fff;font-size:0.96rem;">Shop Now →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ── Testimonials strip ── -->
+    @if (ViewBag.HomepageTestimonials is List<PharmaSkincare.Models.Testimonial> testimonials && testimonials.Any())
+    {
+        <section style="padding:3.5rem 0;background:#F8F7F4;border-top:1px solid var(--ps-border);">
+            <div class="container-shop">
+                <div class="d-flex align-items-end justify-content-between mb-3">
+                    <div>
+                        <div class="section-subtitle mb-1">What our customers say</div>
+                        <h2 class="section-title mb-0" style="font-size:2rem;">Real Results, Real People</h2>
+                    </div>
+                    <a asp-controller="Home" asp-action="Testimonials" class="btn-outline-ps" style="padding:0.5rem 1.1rem;font-size:1.08rem;">Read All</a>
+                </div>
+                <div class="row g-3">
+                    @foreach (var t in testimonials.Take(3))
+                    {
+                        <div class="col-md-4">
+                            <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.5rem;height:100%;">
+                                <div style="color:#F59E0B;font-size:1.2rem;margin-bottom:0.75rem;">@string.Concat(Enumerable.Repeat("★", t.Rating))@string.Concat(Enumerable.Repeat("☆", 5 - t.Rating))</div>
+                                <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;margin-bottom:0.6rem;">@t.Title</div>
+                                <p style="font-size:0.88rem;color:var(--ps-mid);line-height:1.65;margin-bottom:1rem;">@t.Content</p>
+                                <div style="font-size:0.96rem;font-weight:600;color:var(--ps-dark);">— @t.AuthorName</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+}
+
+<!-- ── Products section ── -->
+<div class="container-shop" id="products" style="padding-top:3rem;padding-bottom:4rem;">
+
+    <!-- Header + filter toggle -->
+    <div class="d-flex align-items-end justify-content-between mb-3 flex-wrap gap-2">
+        <div>
+            @if (isFiltered)
+            {
+                <div class="section-subtitle mb-1">Search Results</div>
+                <h1 class="section-title mb-0" style="font-size:2rem;">
+                    @if (string.IsNullOrWhiteSpace(searchTerm)) { <text>Filtered Products</text> } else { <text>&ldquo;@searchTerm&rdquo;</text> }
+                </h1>
+            }
+            else
+            {
+                <div class="section-subtitle mb-1">Our Collection</div>
+                <h2 class="section-title mb-0">All Products</h2>
+            }
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <span style="font-size:1.05rem;color:var(--ps-mid);">@totalCount product@(totalCount != 1 ? "s" : "")</span>
+            <button type="button" id="filterToggle"
+                    style="background:#fff;border:1px solid var(--ps-border);border-radius:9px;padding:0.5rem 1rem;font-size:1.05rem;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:0.4rem;"
+                    onclick="document.getElementById('filterBar').classList.toggle('d-none')">
+                <i class="bi bi-sliders"></i> Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter bar (collapsible) -->
+    <div id="filterBar" class="@(isFiltered ? "" : "d-none")" style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:2rem;">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-12 col-md-4">
+                <label class="form-label">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text" style="background:#fff;border-color:#E0E0DC;"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="search" value="@searchTerm" class="form-control" placeholder="Search products…" style="border-left:none;" />
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label">Category</label>
+                <select name="categoryId" class="form-select">
+                    <option value="">All Categories</option>
+                    @foreach (var fcat in filterCats)
+                    {
+                        <option value="@fcat.CategoryId" selected="@(catFilter == fcat.CategoryId ? "selected" : null)">@fcat.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label">Format</label>
+                <select name="format" class="form-select">
+                    <option value="">All Formats</option>
+                    @foreach (var f in Enum.GetValues<ProductFormat>())
+                    {
+                        <option value="@f" selected="@(f.ToString() == formatFilter ? "selected" : null)">@f</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label">Sort by</label>
+                <select name="sort" class="form-select">
+                    <option value="">Newest First</option>
+                    <option value="name" selected="@(ViewBag.Sort == "name" ? "selected" : null)">A → Z</option>
+                </select>
+            </div>
+            <div class="col-auto d-flex gap-2 align-items-end">
+                <button type="submit" class="btn-ps" style="padding:0.55rem 1.25rem;">Apply</button>
+                <a asp-action="Index" class="btn-outline-ps" style="padding:0.55rem 1rem;"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Product grid -->
+    @if (Model.Any())
+    {
+        <div class="row g-3 g-md-4">
+            @foreach (var sub in Model)
+            {
+                var activeProducts = sub.Products.Where(p => p.IsActive).OrderBy(p => p.FinalPrice).ToList();
+                bool allOutOfStock = !activeProducts.Any(p => p.StockQuantity > 0);
+                bool anyLowStock   = activeProducts.Any(p => p.StockQuantity > 0 && p.StockQuantity <= 5);
+                decimal? fromPrice = activeProducts.Any() ? activeProducts.Min(p => p.FinalPrice) : (decimal?)null;
+                int sizeCount = activeProducts.Count;
+                var cardImg = activeProducts.Select(p => p.ImageUrl).FirstOrDefault(u => !string.IsNullOrEmpty(u))
+                    ?? activeProducts.SelectMany(p => p.Images).OrderBy(i => i.DisplayOrder).FirstOrDefault()?.ImageUrl
+                    ?? sub.MainImageUrl;
+                <div class="col-sm-6 col-lg-4 col-xl-3">
+                    <div class="product-card" style="@(allOutOfStock ? "opacity:0.72;" : "")">
+                        <a asp-action="Subcategory" asp-route-id="@sub.SubcategoryId" style="text-decoration:none;color:inherit;">
+                            <div class="product-card-img" style="@(allOutOfStock ? "filter:grayscale(35%);" : "")">
+                                @if (!string.IsNullOrEmpty(cardImg))
+                                {
+                                    <img src="@cardImg" alt="@sub.Name" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-droplet-half" style="font-size:3.5rem;color:#74C69D;opacity:0.5;"></i>
+                                }
+                                @if (allOutOfStock)
+                                {
+                                    <div style="position:absolute;top:0.75rem;left:0.75rem;background:rgba(0,0,0,0.55);color:#fff;font-size:0.88rem;font-weight:600;border-radius:50px;padding:0.25rem 0.75rem;">Out of stock</div>
+                                }
+                                else if (anyLowStock)
+                                {
+                                    <div style="position:absolute;top:0.75rem;left:0.75rem;background:#EF4444;color:#fff;font-size:0.88rem;font-weight:700;border-radius:50px;padding:0.25rem 0.75rem;">Low stock</div>
+                                }
+                                @if (sub.SizeType != SizeType.None && sizeCount > 1)
+                                {
+                                    <div style="position:absolute;bottom:0.75rem;right:0.75rem;background:rgba(44,110,73,0.9);color:#fff;font-size:0.84rem;font-weight:600;border-radius:50px;padding:0.2rem 0.65rem;">@sizeCount sizes</div>
+                                }
+                            </div>
+                        </a>
+                        <div class="product-card-body">
+                            <div class="product-card-cat">@sub.Category?.Name &nbsp;·&nbsp; @sub.ProductFormat</div>
+                            <a asp-action="Subcategory" asp-route-id="@sub.SubcategoryId" style="text-decoration:none;">
+                                <div class="product-card-name">@sub.Name</div>
+                            </a>
+                            @if (!string.IsNullOrEmpty(sub.Description))
+                            {
+                                <div class="product-card-desc">@sub.Description</div>
+                            }
+                            <div class="product-card-footer">
+                                <div class="product-price">
+                                    @if (fromPrice.HasValue)
+                                    {
+                                        @(sizeCount > 1 ? "from " : "")<text>JD @fromPrice.Value.ToString("N2")</text>
+                                    }
+                                </div>
+                                <a asp-action="Subcategory" asp-route-id="@sub.SubcategoryId" class="btn-view-product">
+                                    @if (sub.SizeType != SizeType.None && sizeCount > 1)
+                                    {
+                                        <i class="bi bi-grid-3x2-gap me-1"></i><text>View Sizes</text>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-eye me-1"></i><text>View Product</text>
+                                    }
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <div class="d-flex justify-content-center mt-5">
+                <nav aria-label="Product pages">
+                    <ul class="pagination">
+                        @for (int i = 1; i <= totalPages; i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="@i"
+                                   asp-route-search="@searchTerm"
+                                   asp-route-categoryId="@catFilter"
+                                   asp-route-format="@formatFilter"
+                                   asp-route-sort="@ViewBag.Sort">@i</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-search" style="font-size:3.5rem;color:#C4C4BE;display:block;margin-bottom:1.25rem;"></i>
+            <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;margin-bottom:0.5rem;">No products found</h3>
+            <p style="color:var(--ps-mid);margin-bottom:1.5rem;">Try adjusting your search or filters.</p>
+            <a asp-action="Index" class="btn-outline-ps">Clear Filters</a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        @if (isFiltered)
+        {
+            <text>document.getElementById('filterBar')?.classList.remove('d-none');</text>
+        }
+    </script>
+}

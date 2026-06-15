@@ -1,0 +1,279 @@
+@model List<PharmaSkincare.Models.Subcategory>
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Shop All"; Layout = "_ShopLayout"; }
+
+@{
+    var search     = ViewBag.Search     as string ?? "";
+    var categoryId = ViewBag.CategoryId as int?;
+    var format     = ViewBag.Format     as string ?? "";
+    var sort       = ViewBag.Sort       as string ?? "";
+    var benefit    = ViewBag.Benefit    as string ?? "";
+    var minPrice   = ViewBag.MinPrice   as decimal?;
+    var maxPrice   = ViewBag.MaxPrice   as decimal?;
+    int total      = ViewBag.TotalCount ?? 0;
+    int curPage    = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    var cats       = ViewBag.Categories as List<PharmaSkincare.Models.Category> ?? new();
+    var formats    = ViewBag.Formats    as ProductFormat[] ?? Array.Empty<ProductFormat>();
+    var allBenefits = new[] { "Muscle Recovery", "Sleep Support", "Pain Relief", "Skin Health", "Stress Relief", "Joint Health" };
+    bool hasFilter = !string.IsNullOrWhiteSpace(search) || categoryId.HasValue || !string.IsNullOrWhiteSpace(format) || !string.IsNullOrWhiteSpace(benefit) || minPrice.HasValue || maxPrice.HasValue;
+}
+
+<div class="container-shop" style="padding-top:2.5rem;padding-bottom:5rem;">
+
+    <!-- Header -->
+    <div style="margin-bottom:1.75rem;">
+        <h1 style="font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:700;margin-bottom:0.25rem;">Shop All Products</h1>
+        <p style="color:var(--ps-mid);font-size:1.14rem;">@total product@(total != 1 ? "s" : "") @(hasFilter ? "found" : "available")</p>
+    </div>
+
+    <!-- Mobile filter toggle (hidden on lg+) -->
+    <div class="d-lg-none mb-3">
+        <button type="button" id="mobileFilterToggle"
+                style="width:100%;background:#fff;border:1px solid var(--ps-border);border-radius:12px;padding:0.75rem 1rem;font-size:1.05rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+            <span><i class="bi bi-sliders me-2" style="color:var(--ps-primary);"></i>Filters@(hasFilter ? " · Active" : "")</span>
+            <i class="bi bi-chevron-down" id="mobileFilterChevron" style="transition:transform 0.2s;"></i>
+        </button>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- ── Sidebar Filters ── -->
+        <div class="col-lg-3">
+            <div id="shopAllFilters" class="d-none d-lg-block ps-sticky">
+                <form method="get" id="filterForm">
+                    <!-- Search -->
+                    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+                        <div style="font-weight:700;font-size:1.08rem;margin-bottom:0.75rem;"><i class="bi bi-search me-2" style="color:var(--ps-primary);"></i>Search</div>
+                        <div class="input-group">
+                            <input type="text" name="search" value="@search" class="form-control" placeholder="Search products…" />
+                            <button type="submit" class="btn" style="background:var(--ps-primary);color:#fff;border:none;border-radius:0 9px 9px 0;padding:0 0.85rem;">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sort -->
+                    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+                        <div style="font-weight:700;font-size:1.08rem;margin-bottom:0.75rem;"><i class="bi bi-sort-down me-2" style="color:var(--ps-primary);"></i>Sort By</div>
+                        @foreach (var (val, label) in new[]{("","Newest"),("price_asc","Price: Low → High"),("price_desc","Price: High → Low"),("name_asc","A → Z"),("name_desc","Z → A"),("rating","Highest Rated")})
+                        {
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="radio" name="sort" value="@val" id="sort_@val" @(sort == val ? "checked" : "") onchange="document.getElementById('filterForm').submit();" />
+                                <label class="form-check-label" for="sort_@val" style="font-size:1.08rem;cursor:pointer;">@label</label>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Category -->
+                    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+                        <div style="font-weight:700;font-size:1.08rem;margin-bottom:0.75rem;"><i class="bi bi-tag me-2" style="color:var(--ps-primary);"></i>Category</div>
+                        <div class="form-check mb-1">
+                            <input class="form-check-input" type="radio" name="categoryId" value="" id="cat_all" @(!categoryId.HasValue ? "checked" : "") onchange="document.getElementById('filterForm').submit();" />
+                            <label class="form-check-label" for="cat_all" style="font-size:1.08rem;cursor:pointer;">All Categories</label>
+                        </div>
+                        @foreach (var cat in cats)
+                        {
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="radio" name="categoryId" value="@cat.CategoryId" id="cat_@cat.CategoryId"
+                                       @(categoryId == cat.CategoryId ? "checked" : "") onchange="document.getElementById('filterForm').submit();" />
+                                <label class="form-check-label" for="cat_@cat.CategoryId" style="font-size:1.08rem;cursor:pointer;">@cat.Name</label>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Format -->
+                    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+                        <div style="font-weight:700;font-size:1.08rem;margin-bottom:0.75rem;"><i class="bi bi-droplet me-2" style="color:var(--ps-primary);"></i>Format</div>
+                        <div class="form-check mb-1">
+                            <input class="form-check-input" type="radio" name="format" value="" id="fmt_all" @(string.IsNullOrEmpty(format) ? "checked" : "") onchange="document.getElementById('filterForm').submit();" />
+                            <label class="form-check-label" for="fmt_all" style="font-size:1.08rem;cursor:pointer;">All Formats</label>
+                        </div>
+                        @foreach (var f in formats)
+                        {
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="radio" name="format" value="@f" id="fmt_@f"
+                                       @(format == f.ToString() ? "checked" : "") onchange="document.getElementById('filterForm').submit();" />
+                                <label class="form-check-label" for="fmt_@f" style="font-size:1.08rem;cursor:pointer;">@f</label>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Health Benefits -->
+                    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+                        <div style="font-weight:700;font-size:1.08rem;margin-bottom:0.75rem;"><i class="bi bi-heart-pulse me-2" style="color:var(--ps-primary);"></i>Health Benefit</div>
+                        <div class="form-check mb-1">
+                            <input class="form-check-input" type="radio" name="benefit" value="" id="ben_all" @(string.IsNullOrEmpty(benefit) ? "checked" : "") onchange="document.getElementById('filterForm').submit();" />
+                            <label class="form-check-label" for="ben_all" style="font-size:1.08rem;cursor:pointer;">All Benefits</label>
+                        </div>
+                        @foreach (var b in allBenefits)
+                        {
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="radio" name="benefit" value="@b" id="ben_@b.Replace(" ","_")"
+                                       @(benefit == b ? "checked" : "") onchange="document.getElementById('filterForm').submit();" />
+                                <label class="form-check-label" for="ben_@b.Replace(" ","_")" style="font-size:1.08rem;cursor:pointer;">@b</label>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Price Range -->
+                    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+                        <div style="font-weight:700;font-size:1.08rem;margin-bottom:0.75rem;"><i class="bi bi-cash-coin me-2" style="color:var(--ps-primary);"></i>Price Range</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="number" name="minPrice" value="@minPrice" class="form-control form-control-sm" placeholder="Min" min="0" step="0.01" />
+                            <span style="color:var(--ps-mid);">–</span>
+                            <input type="number" name="maxPrice" value="@maxPrice" class="form-control form-control-sm" placeholder="Max" min="0" step="0.01" />
+                        </div>
+                        <button type="submit" class="btn-outline-ps w-100 justify-content-center mt-2" style="display:flex;font-size:1.02rem;padding:0.45rem;">Apply</button>
+                    </div>
+
+                    @if (hasFilter)
+                    {
+                        <a asp-action="ShopAll" class="btn-outline-ps w-100 justify-content-center" style="display:flex;font-size:1.05rem;padding:0.55rem;">
+                            <i class="bi bi-x-lg me-1"></i> Clear All Filters
+                        </a>
+                    }
+                </form>
+            </div>
+        </div>
+
+        <!-- ── Product Grid ── -->
+        <div class="col-lg-9">
+            @if (Model.Any())
+            {
+                <div class="row g-3">
+                    @foreach (var sub in Model)
+                    {
+                        var activeProducts = sub.Products.Where(p => p.IsActive).OrderBy(p => p.FinalPrice).ToList();
+                        bool allOutOfStock = !activeProducts.Any(p => p.StockQuantity > 0);
+                        bool anyLowStock   = activeProducts.Any(p => p.StockQuantity > 0 && p.StockQuantity <= 5);
+                        decimal? fromPrice = activeProducts.Any() ? activeProducts.Min(p => p.FinalPrice) : (decimal?)null;
+                        int sizeCount = activeProducts.Count;
+                        var cardImg = activeProducts.Select(p => p.ImageUrl).FirstOrDefault(u => !string.IsNullOrEmpty(u))
+                            ?? activeProducts.SelectMany(p => p.Images).OrderBy(i => i.DisplayOrder).FirstOrDefault()?.ImageUrl
+                            ?? sub.MainImageUrl;
+                        <div class="col-sm-6 col-xl-4">
+                            <div class="product-card" style="@(allOutOfStock ? "opacity:0.72;" : "")">
+                                <a asp-action="Subcategory" asp-route-id="@sub.SubcategoryId" style="text-decoration:none;color:inherit;">
+                                    <div class="product-card-img" style="@(allOutOfStock ? "filter:grayscale(35%);" : "")">
+                                        @if (!string.IsNullOrEmpty(cardImg))
+                                        {
+                                            <img src="@cardImg" alt="@sub.Name" loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-droplet-half" style="font-size:3.5rem;color:#74C69D;opacity:0.5;"></i>
+                                        }
+                                        @if (allOutOfStock)
+                                        {
+                                            <div style="position:absolute;top:0.75rem;left:0.75rem;background:rgba(0,0,0,0.55);color:#fff;font-size:0.88rem;font-weight:600;border-radius:50px;padding:0.25rem 0.75rem;">Out of stock</div>
+                                        }
+                                        else if (anyLowStock)
+                                        {
+                                            <div style="position:absolute;top:0.75rem;left:0.75rem;background:#EF4444;color:#fff;font-size:0.88rem;font-weight:700;border-radius:50px;padding:0.25rem 0.75rem;">Low stock</div>
+                                        }
+                                        @if (sub.SizeType != SizeType.None && sizeCount > 1)
+                                        {
+                                            <div style="position:absolute;bottom:0.75rem;right:0.75rem;background:rgba(44,110,73,0.9);color:#fff;font-size:0.84rem;font-weight:600;border-radius:50px;padding:0.2rem 0.65rem;">@sizeCount sizes</div>
+                                        }
+                                    </div>
+                                </a>
+                                <div class="product-card-body">
+                                    <div class="product-card-cat">@sub.Category?.Name &nbsp;·&nbsp; @sub.ProductFormat</div>
+                                    <a asp-action="Subcategory" asp-route-id="@sub.SubcategoryId" style="text-decoration:none;">
+                                        <div class="product-card-name">@sub.Name</div>
+                                    </a>
+                                    @if (!string.IsNullOrEmpty(sub.Description))
+                                    {
+                                        <div class="product-card-desc">@sub.Description</div>
+                                    }
+                                    <div class="product-card-footer">
+                                        <div class="product-price">
+                                            @if (fromPrice.HasValue)
+                                            {
+                                                @(sizeCount > 1 ? "from " : "")<text>JD @fromPrice.Value.ToString("N2")</text>
+                                            }
+                                        </div>
+                                        <a asp-action="Subcategory" asp-route-id="@sub.SubcategoryId" class="btn-view-product">
+                                            @if (sub.SizeType != SizeType.None && sizeCount > 1)
+                                            {
+                                                <i class="bi bi-grid-3x2-gap me-1"></i><text>View Sizes</text>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-eye me-1"></i><text>View Product</text>
+                                            }
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (totalPages > 1)
+                {
+                    <div class="d-flex justify-content-center mt-5">
+                        <nav>
+                            <ul class="pagination">
+                                @if (curPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" asp-action="ShopAll" asp-route-page="@(curPage-1)"
+                                           asp-route-search="@search" asp-route-categoryId="@categoryId" asp-route-format="@format"
+                                           asp-route-sort="@sort" asp-route-minPrice="@minPrice" asp-route-maxPrice="@maxPrice">‹</a>
+                                    </li>
+                                }
+                                @for (int i = Math.Max(1, curPage - 2); i <= Math.Min(totalPages, curPage + 2); i++)
+                                {
+                                    <li class="page-item @(i == curPage ? "active" : "")">
+                                        <a class="page-link" asp-action="ShopAll" asp-route-page="@i"
+                                           asp-route-search="@search" asp-route-categoryId="@categoryId" asp-route-format="@format"
+                                           asp-route-sort="@sort" asp-route-minPrice="@minPrice" asp-route-maxPrice="@maxPrice">@i</a>
+                                    </li>
+                                }
+                                @if (curPage < totalPages)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" asp-action="ShopAll" asp-route-page="@(curPage+1)"
+                                           asp-route-search="@search" asp-route-categoryId="@categoryId" asp-route-format="@format"
+                                           asp-route-sort="@sort" asp-route-minPrice="@minPrice" asp-route-maxPrice="@maxPrice">›</a>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="text-align:center;padding:5rem 0;">
+                    <i class="bi bi-search" style="font-size:3.5rem;color:#C4C4BE;display:block;margin-bottom:1.25rem;"></i>
+                    <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;margin-bottom:0.75rem;">No products found</h3>
+                    <p style="color:var(--ps-mid);margin-bottom:1.5rem;">Try adjusting your search or filters.</p>
+                    <a asp-action="ShopAll" class="btn-outline-ps">Clear Filters</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const btn = document.getElementById('mobileFilterToggle');
+    const panel = document.getElementById('shopAllFilters');
+    const chevron = document.getElementById('mobileFilterChevron');
+    if (!btn || !panel) return;
+    if (@(hasFilter ? "true" : "false") && window.innerWidth < 992) {
+        panel.classList.remove('d-none');
+        chevron.style.transform = 'rotate(180deg)';
+    }
+    btn.addEventListener('click', function () {
+        const isHidden = panel.classList.contains('d-none');
+        panel.classList.toggle('d-none', !isHidden);
+        chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
+    });
+}());
+</script>
+}

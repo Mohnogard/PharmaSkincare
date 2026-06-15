@@ -1,0 +1,54 @@
+@model IEnumerable<PharmaSkincare.Models.Endorsement>
+@{ ViewData["Title"] = "Endorsements"; }
+
+<div class="page-header">
+    <div><h1><i class="bi bi-award me-2" style="color:#f39c12;"></i>Doctor Endorsements</h1></div>
+    <a asp-action="CreateEndorsement" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Add Endorsement</a>
+</div>
+
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Doctor</th><th>Product</th><th>Date</th><th>Expiry</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+            @foreach (var e in Model)
+            {
+                <tr>
+                    <td>
+                        <div style="font-weight:600;font-size:1.05rem;">@e.Doctor?.Name</div>
+                        <small class="text-muted">@e.Doctor?.Specialty</small>
+                    </td>
+                    <td>
+                        <div style="font-weight:600;font-size:1.05rem;">@e.Product?.DisplayName</div>
+                        <small class="text-muted">@e.Product?.SKU</small>
+                    </td>
+                    <td class="text-muted small">@e.EndorsementDate.ToString("dd MMM yyyy")</td>
+                    <td class="small">
+                        @if (e.ExpiryDate.HasValue)
+                        {
+                            @e.ExpiryDate.Value.ToString("dd MMM yyyy")
+                            if (e.ExpiryDate < DateTime.UtcNow) { <span class="badge bg-danger ms-1">Expired</span> }
+                        }
+                        else { <span class="text-muted">Ongoing</span> }
+                    </td>
+                    <td><span class="badge bg-light text-dark border badge-status">@(e.EndorsementType ?? "General")</span></td>
+                    <td>
+                        @if (e.IsActive) { <span class="badge bg-success badge-status">Active</span> }
+                        else { <span class="badge bg-secondary badge-status">Inactive</span> }
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(e.DocumentPath))
+                        {
+                            <a href="@e.DocumentPath" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-file-earmark"></i>
+                            </a>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-award fs-1 d-block mb-2 opacity-25"></i>No endorsements yet.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

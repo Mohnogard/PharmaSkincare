@@ -1,0 +1,110 @@
+@model IEnumerable<PharmaSkincare.ViewModels.UserManagementViewModel>
+@{ ViewData["Title"] = "User Management"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-people me-2" style="color:var(--ps-primary);"></i>User Management</h1>
+        <small class="text-muted">@Model.Count() users registered</small>
+    </div>
+    <form method="get" class="d-flex gap-2">
+        <input type="text" name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Search users…" style="width:220px;" />
+        <button class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+    </form>
+</div>
+
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Last Login</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var u in Model)
+            {
+                var roleClass = u.Roles.FirstOrDefault() switch {
+                    "Admin" => "bg-danger",
+                    "WarehouseEmployee" => "bg-primary",
+                    "MarketingManager" => "bg-warning text-dark",
+                    "Customer" => "bg-success",
+                    _ => "bg-secondary"
+                };
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:34px;height:34px;background:var(--ps-primary);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.96rem;">
+                                @u.FullName.FirstOrDefault().ToString().ToUpper()
+                            </div>
+                            <div style="font-weight:600;font-size:1.05rem;">@u.FullName</div>
+                        </div>
+                    </td>
+                    <td class="text-muted small">@u.Email</td>
+                    <td>
+                        @foreach (var role in u.Roles)
+                        {
+                            <span class="badge @roleClass badge-status me-1">@role</span>
+                        }
+                    </td>
+                    <td>
+                        @if (u.IsActive) { <span class="badge bg-success badge-status">Active</span> }
+                        else { <span class="badge bg-secondary badge-status">Inactive</span> }
+                    </td>
+                    <td class="text-muted small">@u.CreatedDate.ToString("dd MMM yyyy")</td>
+                    <td class="text-muted small">@(u.LastLoginDate?.ToString("dd MMM HH:mm") ?? "Never")</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Role Assignment -->
+                            <form asp-action="AssignRole" method="post" class="d-flex gap-1">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="userId" value="@u.UserId" />
+                                <select name="role" class="form-select form-select-sm" style="width:140px;">
+                                    @foreach (string role in ViewBag.AllRoles)
+                                    {
+                                        <option value="@role" selected="@(u.Roles.Contains(role) ? "selected" : null)">@role</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Assign Role"><i class="bi bi-person-gear"></i></button>
+                            </form>
+
+                            <!-- Toggle Active -->
+                            <form asp-action="ToggleUserStatus" asp-route-userId="@u.UserId" method="post"
+                                  onsubmit="return confirm('@(u.IsActive ? "Deactivate" : "Activate") this user?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm @(u.IsActive ? "btn-outline-danger" : "btn-outline-success")" title="@(u.IsActive ? "Deactivate" : "Activate")">
+                                    <i class="bi @(u.IsActive ? "bi-person-x" : "bi-person-check")"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @{
+        int uCurPage = ViewBag.CurrentPage ?? 1;
+        int uTotalPages = ViewBag.TotalPages ?? 1;
+        int uTotal = ViewBag.TotalCount ?? 0;
+    }
+    @if (uTotalPages > 1)
+    {
+        <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between">
+            <small class="text-muted">Page @uCurPage of @uTotalPages (@uTotal users)</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    @if (uCurPage > 1)
+                    {
+                        <li class="page-item"><a class="page-link" asp-action="Users" asp-route-page="@(uCurPage-1)" asp-route-search="@ViewBag.Search">‹</a></li>
+                    }
+                    @for (int i = Math.Max(1, uCurPage - 2); i <= Math.Min(uTotalPages, uCurPage + 2); i++)
+                    {
+                        <li class="page-item @(i == uCurPage ? "active" : "")">
+                            <a class="page-link" asp-action="Users" asp-route-page="@i" asp-route-search="@ViewBag.Search">@i</a>
+                        </li>
+                    }
+                    @if (uCurPage < uTotalPages)
+                    {
+                        <li class="page-item"><a class="page-link" asp-action="Users" asp-route-page="@(uCurPage+1)" asp-route-search="@ViewBag.Search">›</a></li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

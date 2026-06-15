@@ -1,0 +1,122 @@
+@model IEnumerable<PharmaSkincare.Models.Subcategory>
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Recommended Products"; Layout = "_ShopLayout"; }
+
+<div class="container-shop py-5">
+
+    <!-- Hero -->
+    <div class="text-center mb-5">
+        <div class="section-subtitle mb-1">Expert Picks</div>
+        <h1 class="section-title">Doctor Recommended</h1>
+        <p class="text-muted mx-auto" style="max-width:540px;font-size:1.05rem;line-height:1.7;margin-top:0.75rem;">
+            Every product in this collection has been personally reviewed and endorsed by our network
+            of qualified medical professionals — so you can shop with confidence.
+        </p>
+    </div>
+
+    <!-- Products -->
+    @if (Model.Any())
+    {
+        <div class="row g-4">
+            @foreach (var sub in Model)
+            {
+                var activeProducts = sub.Products.Where(p => p.IsActive).OrderBy(p => p.FinalPrice).ToList();
+                decimal? fromPrice = activeProducts.Any() ? activeProducts.Min(p => p.FinalPrice) : (decimal?)null;
+                int sizeCount = activeProducts.Count;
+                var cardImg = activeProducts.SelectMany(p => p.Images)
+                    .OrderByDescending(i => i.IsPrimary).ThenBy(i => i.DisplayOrder)
+                    .FirstOrDefault()?.ImageUrl ?? sub.MainImageUrl;
+                var endorsedDoctors = activeProducts
+                    .SelectMany(p => p.Endorsements.Where(e => e.IsActive))
+                    .Select(e => e.Doctor?.Name)
+                    .Where(n => n != null)
+                    .Distinct()
+                    .ToList();
+
+                <div class="col-sm-6 col-lg-4 col-xl-3">
+                    <div class="product-card" style="position:relative;">
+                        <div style="position:absolute;top:0.75rem;left:0.75rem;z-index:2;background:var(--ps-primary);color:#fff;border-radius:50px;font-size:1.14rem;font-weight:700;padding:0.25em 0.85em;letter-spacing:0.04em;">
+                            <i class="bi bi-award me-1"></i>Doctor Endorsed
+                        </div>
+                        <a asp-action="Subcategory" asp-route-id="@sub.SubcategoryId" style="text-decoration:none;color:inherit;">
+                            <div class="product-card-img">
+                                @if (!string.IsNullOrEmpty(cardImg))
+                                {
+                                    <img src="@cardImg" alt="@sub.Name" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-droplet-half" style="font-size:3rem;color:#74C69D;opacity:0.6;"></i>
+                                }
+                            </div>
+                        </a>
+                        <div class="product-card-body">
+                            <div class="product-card-cat">@sub.Category?.Name &nbsp;·&nbsp; @sub.ProductFormat</div>
+                            <a asp-action="Subcategory" asp-route-id="@sub.SubcategoryId" style="text-decoration:none;">
+                                <div class="product-card-name">@sub.Name</div>
+                            </a>
+                            @if (endorsedDoctors.Any())
+                            {
+                                <div style="font-size:1.14rem;color:var(--ps-mid);margin-top:0.3rem;">
+                                    Endorsed by @string.Join(", ", endorsedDoctors.Select(n => $"Dr. {n}"))
+                                </div>
+                            }
+                            <div class="product-card-footer">
+                                <div class="product-price">
+                                    @if (fromPrice.HasValue)
+                                    {
+                                        @(sizeCount > 1 ? "from " : "")<text>JD @fromPrice.Value.ToString("N2")</text>
+                                    }
+                                </div>
+                                <a asp-action="Subcategory" asp-route-id="@sub.SubcategoryId" class="btn-view-product">
+                                    @if (sub.SizeType != SizeType.None && sizeCount > 1)
+                                    {
+                                        <i class="bi bi-grid-3x2-gap me-1"></i><text>View Sizes</text>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-eye me-1"></i><text>View Product</text>
+                                    }
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-award" style="font-size:3rem;color:#C4C4BE;display:block;margin-bottom:1rem;"></i>
+            <h4 style="font-family:'Cormorant Garamond',serif;">No endorsements yet</h4>
+            <p class="text-muted">Our medical team is reviewing products. Check back soon.</p>
+            <a asp-action="Index" class="btn-outline-ps mt-2">Browse All Products</a>
+        </div>
+    }
+
+    <!-- Trust indicators -->
+    <div class="row g-3 mt-5">
+        <div class="col-sm-4">
+            <div style="text-align:center;padding:2rem 1.5rem;background:#fff;border:1px solid var(--ps-border);border-radius:16px;height:100%;">
+                <i class="bi bi-person-badge" style="font-size:4rem;color:var(--ps-primary);display:block;margin-bottom:0.75rem;"></i>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:700;margin-bottom:0.35rem;">Medical Experts</div>
+                <div style="font-size:1.14rem;color:var(--ps-mid);">Reviewed by qualified practitioners</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div style="text-align:center;padding:2rem 1.5rem;background:#fff;border:1px solid var(--ps-border);border-radius:16px;height:100%;">
+                <i class="bi bi-shield-check" style="font-size:4rem;color:var(--ps-primary);display:block;margin-bottom:0.75rem;"></i>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:700;margin-bottom:0.35rem;">Certified Safe</div>
+                <div style="font-size:1.14rem;color:var(--ps-mid);">Pharmaceutical-grade ingredients</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div style="text-align:center;padding:2rem 1.5rem;background:#fff;border:1px solid var(--ps-border);border-radius:16px;height:100%;">
+                <i class="bi bi-award" style="font-size:4rem;color:var(--ps-primary);display:block;margin-bottom:0.75rem;"></i>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:700;margin-bottom:0.35rem;">Clinically Backed</div>
+                <div style="font-size:1.14rem;color:var(--ps-mid);">Evidence-based formulations</div>
+            </div>
+        </div>
+    </div>
+</div>

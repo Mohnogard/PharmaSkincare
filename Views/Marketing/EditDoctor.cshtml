@@ -1,0 +1,69 @@
+@model PharmaSkincare.Models.Doctor
+@{ ViewData["Title"] = "Edit Doctor"; }
+
+<div class="page-header">
+    <h1><i class="bi bi-pencil-square me-2" style="color:var(--ps-primary);"></i>Edit Doctor</h1>
+    <a asp-action="Doctors" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-card">
+            <form asp-action="EditDoctor" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="DoctorId" />
+                <div class="row g-3">
+                    <div class="col-12"><label class="form-label">Full Name</label><input asp-for="Name" class="form-control" /></div>
+                    <div class="col-md-6"><label class="form-label">Specialty</label><input asp-for="Specialty" class="form-control" /></div>
+                    <div class="col-md-6"><label class="form-label">Qualification</label><input asp-for="Qualification" class="form-control" /></div>
+                    <div class="col-md-6"><label class="form-label">Email</label><input asp-for="Email" type="email" class="form-control" /></div>
+                    <div class="col-md-6"><label class="form-label">Phone</label><input asp-for="Phone" type="tel" class="form-control" /></div>
+                    <div class="col-md-6"><label class="form-label">License Number</label><input asp-for="LicenseNumber" class="form-control" /></div>
+                    <div class="col-md-6"><label class="form-label">Hospital</label><input asp-for="Hospital" class="form-control" /></div>
+                    <div class="col-md-6"><label class="form-label">City</label><input asp-for="City" class="form-control" /></div>
+                    <div class="col-md-6"><label class="form-label">Country</label><input asp-for="Country" class="form-control" /></div>
+                    <div class="col-12"><label class="form-label">Bio</label><textarea asp-for="Bio" class="form-control" rows="3"></textarea></div>
+                    <div class="col-12">
+                        <label class="form-label">Profile Photo</label>
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <div id="photoPreview" style="width:72px;height:72px;border-radius:50%;overflow:hidden;border:2px solid var(--ps-border);background:#f5f5f5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                                {
+                                    <img src="@Model.ProfileImageUrl" id="currentPhoto" style="width:100%;height:100%;object-fit:cover;" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-person-fill" style="font-size:2rem;color:#ccc;"></i>
+                                }
+                            </div>
+                            <div style="flex:1;">
+                                <input type="file" name="imageFile" id="imageFile" class="form-control" accept="image/*" />
+                                <div class="form-text">Upload a new image to replace the current one.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-auto"><div class="form-check form-switch"><input asp-for="IsActive" class="form-check-input" type="checkbox" /><label asp-for="IsActive" class="form-check-label">Active</label></div></div>
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i>Save Changes</button>
+                    <a asp-action="Doctors" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.getElementById('imageFile').addEventListener('change', function () {
+    const file = this.files[0];
+    const preview = document.getElementById('photoPreview');
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
+    };
+    reader.readAsDataURL(file);
+});
+</script>
+}

@@ -1,0 +1,108 @@
+@model PharmaSkincare.Models.Shipment
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = $"Shipment {Model.TrackingNumber}"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-truck me-2" style="color:var(--ps-primary);"></i>Shipment Details</h1>
+        <code>@Model.TrackingNumber</code>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.ShipmentId" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil me-1"></i>Edit</a>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="form-card mb-3">
+            <h6 class="fw-700 mb-3 pb-2 border-bottom" style="font-weight:700;">Shipment Information</h6>
+            <div class="row g-3">
+                <div class="col-md-6"><small class="text-muted d-block">Tracking Number</small><code class="fs-6">@Model.TrackingNumber</code></div>
+                <div class="col-md-6"><small class="text-muted d-block">Carrier</small>@(Model.DeliveryCompany ?? "—")</div>
+                <div class="col-md-6"><small class="text-muted d-block">Shipped Date</small>@Model.ShipmentDate.ToString("dd MMM yyyy")</div>
+                <div class="col-md-6"><small class="text-muted d-block">Est. Delivery</small>@(Model.EstimatedDeliveryDate?.ToString("dd MMM yyyy") ?? "—")</div>
+                <div class="col-md-6"><small class="text-muted d-block">Actual Delivery</small>@(Model.ActualDeliveryDate?.ToString("dd MMM yyyy") ?? "Pending")</div>
+                <div class="col-md-6"><small class="text-muted d-block">Region</small>@(Model.Region ?? "—")</div>
+                <div class="col-md-6"><small class="text-muted d-block">Delivery Cost</small>JD @Model.DeliveryCost.ToString("N2")</div>
+                <div class="col-md-6">
+                    <small class="text-muted d-block">Status</small>
+                    @{
+                        var sc = Model.Status switch {
+                            ShipmentStatus.Delivered => "bg-success",
+                            ShipmentStatus.InTransit => "bg-info",
+                            ShipmentStatus.Delayed => "bg-warning text-dark",
+                            ShipmentStatus.Returned => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+                    }
+                    <span class="badge @sc px-3 py-2">@Model.Status</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.DeliveryAddress))
+                {
+                    <div class="col-12"><small class="text-muted d-block">Delivery Address</small>@Model.DeliveryAddress</div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Notes))
+                {
+                    <div class="col-12"><small class="text-muted d-block">Notes</small>@Model.Notes</div>
+                }
+            </div>
+        </div>
+
+        @if (Model.Order?.OrderItems != null)
+        {
+            <div class="table-card">
+                <div class="p-3 border-bottom"><h6 class="mb-0 fw-700" style="font-weight:700;">Items in this Shipment (Order #@Model.OrderId)</h6></div>
+                <table class="table mb-0">
+                    <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th></tr></thead>
+                    <tbody>
+                        @foreach (var item in Model.Order.OrderItems)
+                        {
+                            <tr>
+                                <td>@item.Product?.DisplayName</td>
+                                <td>@item.Quantity</td>
+                                <td>JD @item.UnitPrice.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="form-card mb-3">
+            <h6 class="fw-700 mb-3 pb-2 border-bottom" style="font-weight:700;"><i class="bi bi-person me-2"></i>Customer</h6>
+            <div><strong>@Model.Order?.Customer?.FullName</strong></div>
+            <div class="text-muted small">@Model.Order?.Customer?.Email</div>
+        </div>
+
+        @if (Model.ActualDeliveryDate.HasValue && Model.EstimatedDeliveryDate.HasValue)
+        {
+            <div class="form-card mb-3">
+                <h6 class="fw-700 mb-2" style="font-weight:700;">Delivery Performance</h6>
+                @if (Model.IsOnTime)
+                {
+                    <div class="text-success d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill fs-4"></i>
+                        <div>
+                            <div class="fw-600" style="font-weight:600;">On Time</div>
+                            <small>Delivered within estimate</small>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    var delay = (Model.ActualDeliveryDate.Value - Model.EstimatedDeliveryDate.Value).Days;
+                    <div class="text-danger d-flex align-items-center gap-2">
+                        <i class="bi bi-x-circle-fill fs-4"></i>
+                        <div>
+                            <div class="fw-600" style="font-weight:600;">Delayed</div>
+                            <small>@delay days late</small>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

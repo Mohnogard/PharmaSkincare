@@ -1,0 +1,95 @@
+@{ ViewData["Title"] = "About Us"; Layout = "_ShopLayout"; }
+
+<div class="container-shop" style="padding-top:4rem;padding-bottom:5rem;">
+
+    <!-- Header -->
+    <div style="text-align:center;max-width:640px;margin:0 auto 4rem;">
+        <div class="section-subtitle mb-2">Our Story</div>
+        <h1 class="section-title" style="font-size:clamp(1.75rem,5vw,3rem);margin-bottom:1.25rem;">About PharmaSkincare</h1>
+        <p style="font-size:1.05rem;color:var(--ps-mid);line-height:1.7;">
+            We exist at the intersection of pharmaceutical science and skincare — bringing hospital-grade formulation standards to everyday skincare routines.
+        </p>
+    </div>
+
+    <!-- Mission split -->
+    <div class="row g-5 align-items-center mb-6" style="margin-bottom:4rem;">
+        <div class="col-lg-6">
+            <div style="background:linear-gradient(145deg,#1B4332,#2C6E49);border-radius:20px;padding:clamp(1.5rem,4vw,3rem);color:#fff;min-height:clamp(240px,45vw,380px);display:flex;flex-direction:column;justify-content:flex-end;">
+                <i class="bi bi-award" style="font-size:3rem;color:rgba(255,255,255,0.4);margin-bottom:1.5rem;"></i>
+                <h2 style="font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;margin-bottom:0.75rem;">Our Mission</h2>
+                <p style="color:rgba(255,255,255,0.75);font-size:1.14rem;line-height:1.65;margin:0;">
+                    To make pharmaceutical-grade skincare accessible to everyone — not just those who can afford clinic treatments. Every product we create is held to the same standard as a prescription medicine.
+                </p>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Why We're Different</h3>
+            <div class="d-flex flex-column gap-4">
+                @foreach (var (icon, color, title, desc) in new[]{
+                    ("bi-microscope","#1B4332","Pharmaceutical Manufacturing","Our products are made in certified pharmaceutical-grade facilities — the same facilities that produce medicines."),
+                    ("bi-person-badge","#1976d2","Clinician-Led Formulation","Every formula is developed with consultant dermatologists and medical doctors, not just cosmetic chemists."),
+                    ("bi-transparency","#92400e","Full Transparency","We publish complete ingredient lists with sourcing information. No hidden fillers, no misleading claims."),
+                    ("bi-heart-pulse","#6d28d9","Results You Can Measure","We invest in clinical studies — if we can't demonstrate measurable results, we don't launch the product.")
+                })
+                {
+                    <div class="d-flex gap-3 align-items-start">
+                        <div style="width:46px;height:46px;background:@(color)15;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="bi @icon" style="color:@color;font-size:1.1rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:600;font-size:1.14rem;margin-bottom:0.25rem;">@title</div>
+                            <div style="font-size:1.02rem;color:var(--ps-mid);line-height:1.6;">@desc</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:20px;padding:3rem;margin-bottom:4rem;">
+        <div class="row g-4 text-center">
+            @foreach (var (num, label) in new[]{("50+","Products in Range"),("12","Partner Clinicians"),("30-Day","Returns Guarantee"),("100%","Pharma-Grade Manufacturing")})
+            {
+                <div class="col-6 col-md-3">
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.75rem,4vw,2.75rem);font-weight:700;color:var(--ps-primary);line-height:1;">@num</div>
+                    <div style="font-size:1.02rem;color:var(--ps-mid);margin-top:0.5rem;">@label</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Team / Values -->
+    <div style="text-align:center;margin-bottom:2.5rem;">
+        <h2 class="section-title" style="font-size:2rem;margin-bottom:0.5rem;">Our Values</h2>
+        <p style="color:var(--ps-mid);font-size:1.14rem;">The principles that guide every product decision we make.</p>
+    </div>
+    <div class="row g-3 mb-5">
+        @foreach (var (icon, title, desc) in new[]{
+            ("bi-shield-check","Safety First","We never compromise on safety. Every ingredient is toxicology-reviewed before use."),
+            ("bi-eyeglasses","Scientific Rigour","Claims must be backed by clinical data — not marketing copy."),
+            ("bi-people","Inclusivity","Formulas designed for all skin types, tones, and sensitivities."),
+            ("bi-recycle","Sustainability","Recyclable packaging, responsible sourcing, carbon-conscious logistics.")
+        })
+        {
+            <div class="col-sm-6 col-lg-3">
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.75rem;text-align:center;height:100%;">
+                    <i class="bi @icon" style="font-size:2rem;color:var(--ps-primary);display:block;margin-bottom:1rem;"></i>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;margin-bottom:0.5rem;">@title</div>
+                    <div style="font-size:1.02rem;color:var(--ps-mid);line-height:1.6;">@desc</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- CTA -->
+    <div style="background:linear-gradient(135deg,#1B4332,#2C6E49);border-radius:20px;padding:clamp(1.5rem,4vw,3rem);text-align:center;color:#fff;">
+        <h3 style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;margin-bottom:0.75rem;">Have a question?</h3>
+        <p style="color:rgba(255,255,255,0.75);margin-bottom:1.75rem;font-size:1.14rem;">We'd love to hear from you — whether it's about our products, our formulation process, or a custom enquiry.</p>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a asp-controller="Home" asp-action="Contact" style="background:#fff;color:#1B4332;border-radius:12px;padding:0.8rem 1.75rem;font-weight:700;text-decoration:none;font-size:1.14rem;">Contact Us</a>
+            <a asp-controller="Shop" asp-action="Index" style="border:1.5px solid rgba(255,255,255,0.5);color:#fff;border-radius:12px;padding:0.8rem 1.75rem;font-weight:500;text-decoration:none;font-size:1.14rem;">Browse Products</a>
+        </div>
+    </div>
+
+</div>

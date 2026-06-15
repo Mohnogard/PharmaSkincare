@@ -1,0 +1,346 @@
+@model PharmaSkincare.ViewModels.EditProfileViewModel
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "My Account"; Layout = "_ShopLayout"; }
+
+@{
+    var orders = ViewBag.AllOrders as List<Order> ?? new List<Order>();
+    var wishlist = ViewBag.WishlistItems as List<WishlistItem> ?? new List<WishlistItem>();
+    var stripePk = (ViewBag.StripePublishableKey as string) ?? "";
+}
+
+<style>
+    .acct-sidebar-link {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.85rem 1.25rem; font-size: 1.14rem; font-weight: 500;
+        color: var(--ps-dark); text-decoration: none;
+        border-left: 3px solid transparent; transition: all 0.15s; cursor: pointer;
+        background: none; border-top: none; border-right: none; border-bottom: none;
+        width: 100%; text-align: left; font-family: inherit;
+    }
+    .acct-sidebar-link:hover { background: var(--ps-primary-light); color: var(--ps-primary); border-left-color: var(--ps-primary-light); }
+    .acct-sidebar-link.active { background: var(--ps-primary-light); color: var(--ps-primary); border-left-color: var(--ps-primary); font-weight: 600; }
+    .acct-sidebar-link + .acct-sidebar-link { border-top: 1px solid var(--ps-border); }
+    .acct-section { display: none; }
+    .acct-section.active { display: block; }
+    .order-row { padding: 1rem 1.25rem; border-bottom: 1px solid var(--ps-border); display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .order-row:last-child { border-bottom: none; }
+    .wishlist-card { background: #fff; border: 1px solid var(--ps-border); border-radius: 14px; overflow: hidden; transition: box-shadow 0.2s; }
+    .wishlist-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+</style>
+
+<div class="container-shop" style="padding-top:3rem;padding-bottom:5rem;">
+    <div class="row g-4">
+
+        <!-- ── Sidebar ── -->
+        <div class="col-lg-3">
+            <!-- User card -->
+            <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.5rem;text-align:center;margin-bottom:1rem;">
+                <div style="width:72px;height:72px;background:var(--ps-primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem;font-size:1.75rem;font-weight:700;color:var(--ps-primary);">
+                    @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
+                    {
+                        <img src="@Model.CurrentImageUrl" alt="Profile" style="width:72px;height:72px;border-radius:50%;object-fit:cover;" />
+                    }
+                    else
+                    {
+                        <text>@Model.FirstName.FirstOrDefault()</text>
+                    }
+                </div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:700;">@Model.FirstName @Model.LastName</div>
+                <div style="font-size:1.05rem;color:var(--ps-mid);margin-top:0.25rem;">@(ViewBag.UserEmail as string)</div>
+                <span style="display:inline-block;background:var(--ps-primary-light);color:var(--ps-primary);border-radius:50px;font-size:0.96rem;font-weight:600;padding:0.2rem 0.7rem;margin-top:0.5rem;">Customer</span>
+            </div>
+
+            <!-- Nav -->
+            <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;overflow:hidden;">
+                <button class="acct-sidebar-link active" data-section="details">
+                    <i class="bi bi-person" style="font-size:1.05rem;width:20px;text-align:center;"></i>Account Details
+                </button>
+                <button class="acct-sidebar-link" data-section="orders">
+                    <i class="bi bi-bag-check" style="font-size:1.05rem;width:20px;text-align:center;"></i>My Orders
+                    @if (orders.Count > 0) { <span style="margin-left:auto;background:var(--ps-primary);color:#fff;border-radius:50px;font-size:0.96rem;font-weight:700;padding:0.1rem 0.55rem;">@orders.Count</span> }
+                </button>
+                <button class="acct-sidebar-link" data-section="wishlist">
+                    <i class="bi bi-heart" style="font-size:1.05rem;width:20px;text-align:center;"></i>Wishlist
+                    @if (wishlist.Count > 0) { <span style="margin-left:auto;background:#dc2626;color:#fff;border-radius:50px;font-size:0.96rem;font-weight:700;padding:0.1rem 0.55rem;">@wishlist.Count</span> }
+                </button>
+                <button class="acct-sidebar-link" data-section="payment">
+                    <i class="bi bi-credit-card" style="font-size:1.05rem;width:20px;text-align:center;"></i>Payment Card Info
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Content ── -->
+        <div class="col-lg-9">
+
+            <!-- ── Account Details ── -->
+            <div id="section-details" class="acct-section active">
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:2rem;">
+                    <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin-bottom:0.25rem;">Account Details</h2>
+                    <p style="color:var(--ps-mid);font-size:1.08rem;margin-bottom:1.75rem;">Update your personal information and delivery address.</p>
+
+                    <form asp-action="Profile" method="post" enctype="multipart/form-data" id="profileForm">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 mb-3" style="font-size:1.08rem;border-radius:10px;"></div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="FirstName" class="form-label"></label>
+                                <input asp-for="FirstName" class="form-control" />
+                                <span asp-validation-for="FirstName" class="text-danger" style="font-size:1.02rem;"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="LastName" class="form-label"></label>
+                                <input asp-for="LastName" class="form-control" />
+                                <span asp-validation-for="LastName" class="text-danger" style="font-size:1.02rem;"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label"></label>
+                                <input asp-for="PhoneNumber" class="form-control" type="tel" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ProfileImage" class="form-label"></label>
+                                <input asp-for="ProfileImage" type="file" class="form-control" accept="image/*" />
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="Address" class="form-label"></label>
+                                <input asp-for="Address" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="City" class="form-label"></label>
+                                <input asp-for="City" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Country" class="form-label"></label>
+                                <input asp-for="Country" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="PostalCode" class="form-label"></label>
+                                <input asp-for="PostalCode" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn-ps" style="padding:0.75rem 2rem;">
+                                <i class="bi bi-check2 me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ── My Orders ── -->
+            <div id="section-orders" class="acct-section">
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;overflow:hidden;">
+                    <div style="padding:1.5rem 1.75rem;border-bottom:1px solid var(--ps-border);">
+                        <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin:0;">My Orders</h2>
+                    </div>
+                    @if (orders.Any())
+                    {
+                        @foreach (var order in orders)
+                        {
+                            var sc = order.Status switch {
+                                OrderStatus.Delivered  => ("bg-success", "Delivered"),
+                                OrderStatus.Shipped    => ("bg-info", "Shipped"),
+                                OrderStatus.Processing => ("bg-primary", "Processing"),
+                                OrderStatus.Packed     => ("bg-secondary", "Packed"),
+                                OrderStatus.Cancelled  => ("bg-danger", "Cancelled"),
+                                OrderStatus.Returned   => ("bg-danger", "Returned"),
+                                _                      => ("bg-warning text-dark", order.Status.ToString())
+                            };
+                            <div class="order-row">
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-weight:600;font-size:1.2rem;">Order #@order.OrderId</div>
+                                    <div style="font-size:1.05rem;color:var(--ps-mid);margin-top:0.2rem;">
+                                        @order.OrderDate.ToString("dd MMM yyyy") &nbsp;·&nbsp; @order.OrderItems.Count item@(order.OrderItems.Count != 1 ? "s" : "")
+                                    </div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <span class="badge @sc.Item1 mb-1">@sc.Item2</span>
+                                    <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;color:var(--ps-primary);">
+                                        JD @((order.TotalAmount + order.ShippingCost - order.DiscountAmount).ToString("N2"))
+                                    </div>
+                                </div>
+                                <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.OrderId"
+                                   class="btn-outline-ps" style="padding:0.45rem 1rem;font-size:1.05rem;white-space:nowrap;">
+                                    View <i class="bi bi-chevron-right" style="font-size:0.96rem;"></i>
+                                </a>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div style="padding:4rem;text-align:center;color:var(--ps-mid);">
+                            <i class="bi bi-bag" style="font-size:3rem;display:block;margin-bottom:1rem;opacity:0.4;"></i>
+                            <p style="font-size:1.2rem;margin-bottom:1.5rem;">You haven't placed any orders yet.</p>
+                            <a asp-controller="Shop" asp-action="Index" class="btn-ps" style="display:inline-flex;">Browse Products</a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- ── Wishlist ── -->
+            <div id="section-wishlist" class="acct-section">
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.5rem 1.75rem;margin-bottom:1rem;">
+                    <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin:0;">Wishlist</h2>
+                </div>
+                @if (wishlist.Any())
+                {
+                    <div class="row g-3">
+                        @foreach (var w in wishlist)
+                        {
+                            <div class="col-sm-6 col-xl-4">
+                                <div class="wishlist-card">
+                                    <a asp-controller="Shop" asp-action="ProductDetails" asp-route-id="@w.ProductId" style="text-decoration:none;">
+                                        <div style="height:180px;background:linear-gradient(135deg,#F0F7F2,#E8F5ED);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                                            @if (!string.IsNullOrEmpty(w.Product?.ImageUrl))
+                                            {
+                                                <img src="@w.Product.ImageUrl" alt="@w.Product?.DisplayName" style="width:100%;height:100%;object-fit:cover;" />
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-droplet-half" style="font-size:3rem;color:#74C69D;opacity:0.5;"></i>
+                                            }
+                                        </div>
+                                        <div style="padding:1rem;">
+                                            <div style="font-size:0.96rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--ps-primary);margin-bottom:0.3rem;">@w.Product?.Subcategory?.Category?.Name</div>
+                                            <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:var(--ps-dark);margin-bottom:0.3rem;">@w.Product?.DisplayName</div>
+                                            <div style="font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:700;color:var(--ps-primary);">JD @w.Product?.Price.ToString("N2")</div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:4rem;text-align:center;color:var(--ps-mid);">
+                        <i class="bi bi-heart" style="font-size:3rem;display:block;margin-bottom:1rem;opacity:0.4;"></i>
+                        <p style="font-size:1.2rem;margin-bottom:1.5rem;">Your wishlist is empty.</p>
+                        <a asp-controller="Shop" asp-action="Index" class="btn-ps" style="display:inline-flex;">Discover Products</a>
+                    </div>
+                }
+            </div>
+
+            <!-- ── Payment Card Info ── -->
+            <div id="section-payment" class="acct-section">
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:2rem;">
+                    <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin-bottom:0.25rem;">Payment Card Info</h2>
+                    <p style="color:var(--ps-mid);font-size:1.08rem;margin-bottom:2rem;">Your card details are securely handled by Stripe. We never store your full card number.</p>
+
+                    <div id="payment-empty-state">
+                        <div style="border:2px dashed var(--ps-border);border-radius:14px;padding:2.5rem;text-align:center;color:var(--ps-mid);margin-bottom:1.5rem;">
+                            <i class="bi bi-credit-card" style="font-size:2.5rem;display:block;margin-bottom:1rem;opacity:0.4;"></i>
+                            <p style="font-size:1.14rem;margin-bottom:1.25rem;">No saved payment methods yet.</p>
+                        </div>
+                        <button class="btn-ps" id="showAddCardBtn" style="padding:0.75rem 2rem;">
+                            <i class="bi bi-plus-circle me-2"></i>Add Payment Card
+                        </button>
+                    </div>
+
+                    <div id="payment-form-wrap" style="display:none;">
+                        <form id="stripePaymentForm">
+                            @Html.AntiForgeryToken()
+                            <div id="payment-element" style="margin-bottom:1.5rem;"></div>
+                            <div id="payment-message" style="display:none;color:#dc3545;font-size:1.08rem;margin-bottom:1rem;"></div>
+                            <div class="d-flex gap-3">
+                                <button type="submit" class="btn-ps" id="saveCardBtn" style="padding:0.75rem 2rem;">
+                                    <i class="bi bi-shield-check me-2"></i>Save Card Securely
+                                </button>
+                                <button type="button" class="btn-outline-ps" id="cancelCardBtn" style="padding:0.7rem 1.5rem;">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+(function() {
+    // ── Tab switching ──
+    const navBtns = document.querySelectorAll('.acct-sidebar-link');
+    const sections = document.querySelectorAll('.acct-section');
+    function showSection(name) {
+        sections.forEach(s => s.classList.remove('active'));
+        navBtns.forEach(b => b.classList.remove('active'));
+        const target = document.getElementById('section-' + name);
+        if (target) target.classList.add('active');
+        const btn = document.querySelector(`[data-section="${name}"]`);
+        if (btn) btn.classList.add('active');
+        history.replaceState(null, null, '#' + name);
+    }
+    navBtns.forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
+    const hash = location.hash.replace('#', '');
+    if (hash && document.getElementById('section-' + hash)) showSection(hash);
+
+    // ── Profile save SweetAlert ──
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            const firstName = document.getElementById('FirstName')?.value?.trim();
+            if (!firstName) return;
+            // Let the form submit naturally — SweetAlert success will come via TempData toast
+        });
+    }
+
+    // ── Stripe payment setup ──
+    const stripePk = '@stripePk';
+    if (!stripePk) return;
+    const stripe = Stripe(stripePk);
+    let elements, paymentElement;
+
+    document.getElementById('showAddCardBtn')?.addEventListener('click', async function() {
+        document.getElementById('payment-empty-state').style.display = 'none';
+        document.getElementById('payment-form-wrap').style.display = 'block';
+        if (!elements) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                const resp = await fetch('/Account/CreateSetupIntent', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/json' }
+                });
+                const data = await resp.json();
+                elements = stripe.elements({ clientSecret: data.clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#2C6E49' } } });
+                paymentElement = elements.create('payment');
+                paymentElement.mount('#payment-element');
+            } catch(err) {
+                document.getElementById('payment-message').textContent = 'Failed to load payment form. Please try again.';
+                document.getElementById('payment-message').style.display = 'block';
+            }
+        }
+    });
+
+    document.getElementById('cancelCardBtn')?.addEventListener('click', function() {
+        document.getElementById('payment-form-wrap').style.display = 'none';
+        document.getElementById('payment-empty-state').style.display = 'block';
+    });
+
+    document.getElementById('stripePaymentForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('saveCardBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving…';
+        const { error, setupIntent } = await stripe.confirmSetup({
+            elements,
+            redirect: 'if_required',
+            confirmParams: { return_url: window.location.href }
+        });
+        if (error) {
+            document.getElementById('payment-message').textContent = error.message;
+            document.getElementById('payment-message').style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Save Card Securely';
+        } else {
+            Swal.fire({ icon: 'success', title: 'Card saved!', text: 'Your payment method has been saved securely.', confirmButtonColor: '#2C6E49' });
+            document.getElementById('payment-form-wrap').style.display = 'none';
+            document.getElementById('payment-empty-state').style.display = 'block';
+        }
+    });
+})();
+</script>
+}

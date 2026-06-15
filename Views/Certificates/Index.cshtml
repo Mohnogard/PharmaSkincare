@@ -1,0 +1,100 @@
+@model IEnumerable<PharmaSkincare.Models.Certificate>
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Certificates & Compliance"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-shield-check me-2" style="color:var(--ps-primary);"></i>Certificates & Compliance</h1>
+        <small class="text-muted">@Model.Count() certificates</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" asp-route-filter="expiring" class="btn btn-outline-warning btn-sm"><i class="bi bi-clock me-1"></i>Expiring</a>
+        <a asp-action="Index" asp-route-filter="expired" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle me-1"></i>Expired</a>
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Add Certificate</a>
+    </div>
+</div>
+
+@if (ViewBag.Filter != null)
+{
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        @if (ViewBag.Filter == "expiring") { <text>Showing certificates expiring within 30 days.</text> }
+        else { <text>Showing expired certificates.</text> }
+        <a asp-action="Index" class="ms-auto text-warning">Clear Filter</a>
+    </div>
+}
+
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr><th>Certificate</th><th>Product</th><th>Issuing Org</th><th>Type</th><th>Issued</th><th>Expires</th><th>Days Left</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model)
+            {
+                var statusClass = c.Status switch {
+                    CertificateStatus.Valid => "bg-success",
+                    CertificateStatus.PendingRenewal => "bg-warning text-dark",
+                    CertificateStatus.Expired => "bg-danger",
+                    _ => "bg-secondary"
+                };
+                var daysLeft = c.DaysUntilExpiry;
+                <tr>
+                    <td>
+                        <div style="font-weight:600;font-size:1.05rem;">@c.CertificateName</div>
+                        @if (!string.IsNullOrEmpty(c.CertificateNumber))
+                        {
+                            <small class="text-muted">@c.CertificateNumber</small>
+                        }
+                    </td>
+                    <td class="small">
+                        @if (c.Product != null)
+                        {
+                            @c.Product.DisplayName
+                        }
+                        else
+                        {
+                            <span class="text-muted">General</span>
+                        }
+                    </td>
+                    <td class="small text-muted">@c.IssuingOrganization</td>
+                    <td><span class="badge bg-light text-dark border badge-status">@(c.CertificateType ?? "—")</span></td>
+                    <td class="small text-muted">@c.IssueDate.ToString("dd MMM yyyy")</td>
+                    <td class="small">@c.ExpiryDate.ToString("dd MMM yyyy")</td>
+                    <td>
+                        @if (daysLeft < 0)
+                        {
+                            <span class="text-danger fw-600" style="font-weight:600;">Expired</span>
+                        }
+                        else if (daysLeft <= 30)
+                        {
+                            <span class="text-warning fw-600" style="font-weight:600;">@daysLeft days</span>
+                        }
+                        else
+                        {
+                            <span class="text-success">@daysLeft days</span>
+                        }
+                    </td>
+                    <td><span class="badge badge-status @statusClass">@c.Status</span></td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            @if (!string.IsNullOrEmpty(c.FilePath))
+                            {
+                                <a href="@c.FilePath" target="_blank" class="btn btn-outline-secondary" title="Download"><i class="bi bi-file-earmark-arrow-down"></i></a>
+                            }
+                            <a asp-action="Edit" asp-route-id="@c.CertificateId" class="btn btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                            <form asp-action="Delete" asp-route-id="@c.CertificateId" method="post" onsubmit="return confirm('Deactivate this certificate?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-outline-danger"><i class="bi bi-archive"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-shield fs-1 d-block mb-2 opacity-25"></i>No certificates found.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

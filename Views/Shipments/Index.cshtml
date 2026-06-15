@@ -1,0 +1,100 @@
+@model PharmaSkincare.ViewModels.ShipmentListViewModel
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Shipments"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-truck me-2" style="color:var(--ps-primary);"></i>Shipments</h1>
+        <small class="text-muted">@Model.TotalCount total shipments</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>New Shipment</a>
+</div>
+
+<div class="form-card mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <input type="text" name="search" value="@Model.SearchTerm" class="form-control form-control-sm" placeholder="Tracking number, carrier…" />
+        </div>
+        <div class="col-md-3">
+            <select name="status" class="form-select form-select-sm">
+                <option value="">All Statuses</option>
+                @foreach (var s in Enum.GetValues<ShipmentStatus>())
+                {
+                    <option value="@s" selected="@(s == Model.StatusFilter ? "selected" : null)">@s</option>
+                }
+            </select>
+        </div>
+        <div class="col-auto d-flex gap-1">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr><th>Tracking #</th><th>Order</th><th>Customer</th><th>Carrier</th><th>Ship Date</th><th>Est. Delivery</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model.Shipments)
+            {
+                var sc = s.Status switch {
+                    ShipmentStatus.Delivered => "bg-success",
+                    ShipmentStatus.InTransit => "bg-info",
+                    ShipmentStatus.Delayed => "bg-warning text-dark",
+                    ShipmentStatus.Returned => "bg-danger",
+                    ShipmentStatus.Lost => "bg-danger",
+                    _ => "bg-secondary"
+                };
+                <tr>
+                    <td><code>@s.TrackingNumber</code></td>
+                    <td><a asp-controller="Orders" asp-action="Details" asp-route-id="@s.OrderId" class="text-decoration-none">#@s.OrderId</a></td>
+                    <td>
+                        <div style="font-size:1.05rem;font-weight:600;">@s.Order?.Customer?.FullName</div>
+                        <small class="text-muted">@s.Order?.Customer?.Email</small>
+                    </td>
+                    <td class="text-muted small">@(s.DeliveryCompany ?? "—")</td>
+                    <td class="text-muted small">@s.ShipmentDate.ToString("dd MMM yyyy")</td>
+                    <td class="small">
+                        @if (s.EstimatedDeliveryDate.HasValue)
+                        {
+                            @s.EstimatedDeliveryDate.Value.ToString("dd MMM yyyy")
+                            if (s.Status != ShipmentStatus.Delivered && s.EstimatedDeliveryDate < DateTime.UtcNow)
+                            {
+                                <span class="badge bg-danger ms-1">Overdue</span>
+                            }
+                        }
+                        else { <text>—</text> }
+                    </td>
+                    <td><span class="badge badge-status @sc">@s.Status</span></td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a asp-action="Details" asp-route-id="@s.ShipmentId" class="btn btn-outline-secondary"><i class="bi bi-eye"></i></a>
+                            <a asp-action="Edit" asp-route-id="@s.ShipmentId" class="btn btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                        </div>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Shipments.Any())
+            {
+                <tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-truck fs-1 d-block mb-2 opacity-25"></i>No shipments found.</td></tr>
+            }
+        </tbody>
+    </table>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="px-3 py-2 border-top d-flex justify-content-between align-items-center">
+            <small class="text-muted">Page @Model.CurrentPage of @Model.TotalPages</small>
+            <nav><ul class="pagination pagination-sm mb-0">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@i">@i</a>
+                    </li>
+                }
+            </ul></nav>
+        </div>
+    }
+</div>

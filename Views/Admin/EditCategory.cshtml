@@ -1,0 +1,136 @@
+@model PharmaSkincare.Models.Category
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Edit Category"; }
+
+@{
+    var otherProducts = ViewBag.OtherProducts as List<Product> ?? new();
+    var categoryProducts = Model.Subcategories.SelectMany(s => s.Products).ToList();
+}
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-pencil me-2" style="color:var(--ps-primary);"></i>Edit Category</h1>
+        <small class="text-muted">Update name/description or reassign products between categories.</small>
+    </div>
+    <a asp-action="Categories" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back to Categories</a>
+</div>
+
+<div class="row g-4">
+
+    <!-- ── Left: Edit form ── -->
+    <div class="col-lg-4">
+        <div class="form-card">
+            <h5 class="fw-700 mb-3">Category Details</h5>
+            <form asp-action="EditCategory" method="post">
+                @Html.AntiForgeryToken()
+                <input asp-for="CategoryId" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="display:none;"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label">Description <span class="text-muted fw-normal">(optional)</span></label>
+                    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg me-1"></i>Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── Right: Products in this category ── -->
+    <div class="col-lg-8">
+
+        <!-- Products currently in this category -->
+        <div class="table-card mb-4">
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                <span class="fw-700">Products in <em>@Model.Name</em></span>
+                <span class="badge bg-light text-dark border">@categoryProducts.Count</span>
+            </div>
+            @if (categoryProducts.Any())
+            {
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in categoryProducts.OrderBy(p => p.DisplayName))
+                        {
+                            <tr>
+                                <td class="fw-500">@p.DisplayName</td>
+                                <td style="color:var(--ps-mid);">@p.SKU</td>
+                                <td>JD @p.Price.ToString("0.00")</td>
+                                <td>
+                                    @if (p.IsActive)
+                                    {
+                                        <span class="badge-status" style="background:#d1fae5;color:#065f46;">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-status" style="background:#fee2e2;color:#991b1b;">Inactive</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="px-3 py-4 text-center text-muted">No products in this category's subcategories yet.</div>
+            }
+        </div>
+
+        <!-- Products from other categories that can be reassigned here -->
+        @if (otherProducts.Any())
+        {
+            <div class="table-card">
+                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                    <span class="fw-700">Assign products from other categories</span>
+                    <span class="badge bg-light text-dark border">@otherProducts.Count available</span>
+                </div>
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Current Category</th>
+                            <th>Price</th>
+                            <th class="text-end">Assign</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in otherProducts.OrderBy(p => p.Subcategory?.Category?.Name).ThenBy(p => p.DisplayName))
+                        {
+                            <tr>
+                                <td class="fw-500">@p.DisplayName</td>
+                                <td style="color:var(--ps-mid);">@(p.Subcategory?.Category?.Name ?? "—")</td>
+                                <td>JD @p.Price.ToString("0.00")</td>
+                                <td class="text-end">
+                                    <form asp-action="AssignProductToCategory" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="productId" value="@p.ProductId" />
+                                        <input type="hidden" name="categoryId" value="@Model.CategoryId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-arrow-left-right"></i> Move here
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

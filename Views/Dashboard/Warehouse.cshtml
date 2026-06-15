@@ -1,0 +1,170 @@
+@model PharmaSkincare.ViewModels.DashboardViewModel
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Warehouse Dashboard"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-boxes me-2" style="color:var(--ps-primary);"></i>Warehouse Dashboard</h1>
+        <small class="text-muted">Operational overview — @DateTime.UtcNow.ToString("dddd, dd MMMM yyyy")</small>
+    </div>
+    <a asp-controller="Shop" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-shop me-1"></i>Visit Store
+    </a>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="label mb-2">Pending Orders</div>
+                    <div class="value">@Model.PendingOrders</div>
+                    <div class="mt-1 small text-warning">awaiting fulfilment</div>
+                </div>
+                <div class="icon-box" style="background:#fff3e0;color:#f39c12;"><i class="bi bi-receipt"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="label mb-2">Low Stock Items</div>
+                    <div class="value">@Model.LowStockCount</div>
+                    <div class="mt-1 small text-danger">need restocking</div>
+                </div>
+                <div class="icon-box" style="background:#fce4ec;color:#e91e63;"><i class="bi bi-exclamation-triangle"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="label mb-2">Total Shipments</div>
+                    <div class="value">@Model.TotalShipments</div>
+                    <div class="mt-1 small text-info">all time</div>
+                </div>
+                <div class="icon-box" style="background:#e3f2fd;color:#1976d2;"><i class="bi bi-truck"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-start justify-content-between">
+                <div>
+                    <div class="label mb-2">Returns</div>
+                    <div class="value">@Model.ReturnedOrdersCount</div>
+                    <div class="mt-1 small text-muted">to process</div>
+                </div>
+                <div class="icon-box" style="background:#f3e5f5;color:#7b1fa2;"><i class="bi bi-arrow-return-left"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Pending Orders -->
+    <div class="col-lg-8">
+        <div class="table-card">
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-700"><i class="bi bi-receipt me-2" style="color:var(--ps-primary);"></i>Orders to Fulfil</h6>
+                <a asp-controller="Orders" asp-action="Index" asp-route-status="Pending" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            @if (Model.RecentOrders.Where(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Processing).Any())
+            {
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>#</th><th>Customer</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var order in Model.RecentOrders.Where(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.Processing || o.Status == OrderStatus.Packed))
+                        {
+                            var sc = order.Status == OrderStatus.Packed ? "bg-secondary" : order.Status == OrderStatus.Processing ? "bg-primary" : "bg-warning text-dark";
+                            <tr>
+                                <td><strong>#@order.OrderId</strong></td>
+                                <td>@order.Customer?.FullName</td>
+                                <td class="text-muted small">@order.OrderDate.ToString("dd MMM")</td>
+                                <td>@order.OrderItems.Count</td>
+                                <td>JD @order.TotalAmount.ToString("N2")</td>
+                                <td><span class="badge @sc">@order.Status</span></td>
+                                <td><a asp-controller="Orders" asp-action="Details" asp-route-id="@order.OrderId" class="btn btn-sm btn-outline-secondary">View</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-check-circle fs-2 text-success d-block mb-2"></i>No pending orders — all caught up!
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Low Stock -->
+    <div class="col-lg-4">
+        <div class="table-card">
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-700"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Low Stock</h6>
+                <a asp-controller="Inventory" asp-action="LowStock" class="btn btn-sm btn-outline-danger">Restock</a>
+            </div>
+            @if (Model.LowStockProducts.Any())
+            {
+                <div class="p-2">
+                    @foreach (var p in Model.LowStockProducts)
+                    {
+                        <div class="d-flex align-items-center gap-2 p-2 rounded" style="font-size:1.05rem;">
+                            <div class="flex-grow-1">
+                                <div class="fw-600" style="font-weight:600;">@p.DisplayName</div>
+                                <small class="text-muted">Min: @p.MinimumStockLevel</small>
+                            </div>
+                            <span class="badge bg-danger">@p.StockQuantity left</span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="p-4 text-center text-muted"><i class="bi bi-check-circle text-success fs-3 d-block mb-1"></i>All stocked</div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Recent Shipments -->
+<div class="table-card">
+    <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+        <h6 class="mb-0 fw-700"><i class="bi bi-truck me-2" style="color:var(--ps-primary);"></i>Recent Shipments</h6>
+        <a asp-controller="Shipments" asp-action="Index" class="btn btn-sm btn-outline-primary">All Shipments</a>
+    </div>
+    @if (Model.RecentShipments.Any())
+    {
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Tracking</th><th>Order</th><th>Carrier</th><th>Est. Delivery</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.RecentShipments)
+                {
+                    var sc = s.Status switch {
+                        ShipmentStatus.Delivered => "bg-success",
+                        ShipmentStatus.InTransit => "bg-info",
+                        ShipmentStatus.Delayed   => "bg-warning text-dark",
+                        ShipmentStatus.Returned  => "bg-danger",
+                        _                        => "bg-secondary"
+                    };
+                    <tr>
+                        <td><code class="small">@s.TrackingNumber</code></td>
+                        <td><a asp-controller="Orders" asp-action="Details" asp-route-id="@s.OrderId">#@s.OrderId</a></td>
+                        <td>@(s.DeliveryCompany ?? "—")</td>
+                        <td class="text-muted small">@s.EstimatedDeliveryDate?.ToString("dd MMM")</td>
+                        <td><span class="badge @sc">@s.Status</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="p-4 text-center text-muted">No shipments yet.</div>
+    }
+</div>

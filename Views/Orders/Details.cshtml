@@ -1,0 +1,161 @@
+@model PharmaSkincare.Models.Order
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = $"Order #{Model.OrderId}"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-receipt me-2" style="color:var(--ps-primary);"></i>Order #@Model.OrderId</h1>
+        <small class="text-muted">Placed @Model.OrderDate.ToString("dd MMMM yyyy HH:mm")</small>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        @{
+            var sc = Model.Status switch {
+                OrderStatus.Delivered => "bg-success",
+                OrderStatus.Shipped => "bg-info",
+                OrderStatus.Processing => "bg-primary",
+                OrderStatus.Packed => "bg-secondary",
+                OrderStatus.Cancelled => "bg-danger",
+                OrderStatus.Returned => "bg-danger",
+                _ => "bg-warning text-dark"
+            };
+        }
+        <span class="badge @sc px-3 py-2" style="font-size:1.05rem;">@Model.Status</span>
+        <a asp-action="Invoice" asp-route-id="@Model.OrderId" class="btn btn-outline-secondary btn-sm" target="_blank">
+            <i class="bi bi-printer me-1"></i>Print Invoice
+        </a>
+        @if (User.IsInRole("Admin") || User.IsInRole("WarehouseEmployee"))
+        {
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>All Orders</a>
+        }
+        else
+        {
+            <a asp-action="MyOrders" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>My Orders</a>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <!-- Order Items -->
+        <div class="table-card mb-3">
+            <div class="p-3 border-bottom"><h6 class="mb-0 fw-700" style="font-weight:700;">Order Items</h6></div>
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Product</th><th>SKU</th><th>Price</th><th>Qty</th><th class="text-end">Subtotal</th></tr></thead>
+                <tbody>
+                    @foreach (var item in Model.OrderItems)
+                    {
+                        <tr>
+                            <td>
+                                <div style="font-weight:600;font-size:1.05rem;">@item.Product?.DisplayName</div>
+                                @if (!string.IsNullOrEmpty(item.Product?.Size)) { <small class="text-muted">@item.Product.Size</small> }
+                            </td>
+                            <td><code class="small">@item.Product?.SKU</code></td>
+                            <td>JD @item.UnitPrice.ToString("N2")</td>
+                            <td>@item.Quantity</td>
+                            <td class="text-end"><strong>JD @((item.UnitPrice * item.Quantity - item.Discount).ToString("N2"))</strong></td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot style="background:#f8f9fb;">
+                    <tr><td colspan="4" class="text-end text-muted">Subtotal</td><td class="text-end">JD @Model.TotalAmount.ToString("N2")</td></tr>
+                    <tr><td colspan="4" class="text-end text-muted">Shipping</td><td class="text-end">JD @Model.ShippingCost.ToString("N2")</td></tr>
+                    @if (Model.DiscountAmount > 0)
+                    {
+                        <tr><td colspan="4" class="text-end text-success">Discount</td><td class="text-end text-success">-JD @Model.DiscountAmount.ToString("N2")</td></tr>
+                    }
+                    <tr style="font-weight:700;"><td colspan="4" class="text-end">Total</td><td class="text-end" style="color:var(--ps-primary);font-size:1.1rem;">JD @((Model.TotalAmount + Model.ShippingCost - Model.DiscountAmount).ToString("N2"))</td></tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Shipment -->
+        @if (Model.Shipment != null)
+        {
+            <div class="form-card">
+                <h6 class="fw-700 mb-3 pb-2 border-bottom" style="font-weight:700;"><i class="bi bi-truck me-2" style="color:var(--ps-primary);"></i>Shipment</h6>
+                <div class="row g-3">
+                    <div class="col-md-6"><small class="text-muted d-block">Tracking Number</small><code>@Model.Shipment.TrackingNumber</code></div>
+                    <div class="col-md-6"><small class="text-muted d-block">Carrier</small>@(Model.Shipment.DeliveryCompany ?? "—")</div>
+                    <div class="col-md-6"><small class="text-muted d-block">Est. Delivery</small>@Model.Shipment.EstimatedDeliveryDate?.ToString("dd MMM yyyy")</div>
+                    <div class="col-md-6"><small class="text-muted d-block">Actual Delivery</small>@(Model.Shipment.ActualDeliveryDate?.ToString("dd MMM yyyy") ?? "—")</div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block">Status</small>
+                        @{
+                            var shClass = Model.Shipment.Status switch {
+                                ShipmentStatus.Delivered => "bg-success",
+                                ShipmentStatus.InTransit => "bg-info",
+                                ShipmentStatus.Delayed => "bg-warning text-dark",
+                                ShipmentStatus.Returned => "bg-danger",
+                                _ => "bg-secondary"
+                            };
+                        }
+                        <span class="badge @shClass">@Model.Shipment.Status</span>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (User.IsInRole("Admin") || User.IsInRole("WarehouseEmployee"))
+        {
+            <div class="form-card text-center py-3">
+                <i class="bi bi-truck fs-2 text-muted opacity-50 d-block mb-2"></i>
+                <p class="text-muted mb-2">No shipment created yet.</p>
+                <a asp-controller="Shipments" asp-action="Create" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-plus me-1"></i>Create Shipment
+                </a>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Customer Info -->
+        <div class="form-card mb-3">
+            <h6 class="fw-700 mb-3 pb-2 border-bottom" style="font-weight:700;"><i class="bi bi-person me-2"></i>Customer</h6>
+            <div class="mb-2"><strong>@Model.Customer?.FullName</strong></div>
+            <div class="text-muted small mb-1"><i class="bi bi-envelope me-1"></i>@Model.Customer?.Email</div>
+            @if (!string.IsNullOrEmpty(Model.Customer?.PhoneNumber))
+            {
+                <div class="text-muted small"><i class="bi bi-telephone me-1"></i>@Model.Customer.PhoneNumber</div>
+            }
+        </div>
+
+        <!-- Shipping Address -->
+        <div class="form-card mb-3">
+            <h6 class="fw-700 mb-3 pb-2 border-bottom" style="font-weight:700;"><i class="bi bi-geo-alt me-2"></i>Shipping Address</h6>
+            <div class="text-muted small">
+                @Model.ShippingAddress<br />
+                @Model.City @Model.PostalCode<br />
+                @Model.Country
+            </div>
+        </div>
+
+        <!-- Order Status Update -->
+        @if (User.IsInRole("Admin") || User.IsInRole("WarehouseEmployee"))
+        {
+            <div class="form-card mb-3">
+                <h6 class="fw-700 mb-3 pb-2 border-bottom" style="font-weight:700;">Update Status</h6>
+                <form asp-action="UpdateStatus" asp-route-id="@Model.OrderId" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <select name="status" class="form-select form-select-sm">
+                            @foreach (var s in Enum.GetValues<OrderStatus>())
+                            {
+                                <option value="@s" selected="@(s == Model.Status ? "selected" : null)">@s</option>
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-arrow-repeat me-1"></i>Update Status
+                    </button>
+                </form>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+            <div class="form-card">
+                <h6 class="fw-700 mb-2 pb-2 border-bottom" style="font-weight:700;">Notes</h6>
+                <p class="text-muted small mb-0">@Model.Notes</p>
+            </div>
+        }
+    </div>
+</div>

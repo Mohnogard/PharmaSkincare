@@ -1,0 +1,177 @@
+@model PharmaSkincare.ViewModels.LoginViewModel
+@{ ViewData["Title"] = "Sign In"; Layout = null; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In — PharmaSkincare</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        :root { --ps-primary:#2C6E49; --ps-primary-dark:#1B4332; --ps-primary-light:#D8F3DC; }
+        *, *::before, *::after { box-sizing: border-box; }
+        html { font-size: 17px; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #FAF9F7; min-height: 100vh; display: flex; }
+        .auth-left {
+            width: 42%; background: linear-gradient(160deg, #1B4332 0%, #2C6E49 60%, #40916C 100%);
+            display: flex; flex-direction: column; justify-content: center; padding: 3rem;
+            position: relative; overflow: hidden;
+        }
+        .auth-left::before {
+            content: ''; position: absolute; top: -80px; right: -80px;
+            width: 300px; height: 300px; border-radius: 50%;
+            border: 60px solid rgba(255,255,255,0.06);
+        }
+        .auth-left::after {
+            content: ''; position: absolute; bottom: -60px; left: -60px;
+            width: 250px; height: 250px; border-radius: 50%;
+            border: 50px solid rgba(255,255,255,0.05);
+        }
+        .auth-brand { font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem; -webkit-text-stroke: 0.4px #fff; letter-spacing: -0.02em; }
+        .auth-brand span { opacity: 0.6; }
+        .auth-tagline { color: rgba(255,255,255,0.75); font-size: 1.1rem; line-height: 1.65; max-width: 300px; }
+        .auth-features { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1rem; }
+        .auth-feature { display: flex; align-items: center; gap: 1rem; color: rgba(255,255,255,0.85); font-size: 1.05rem; }
+        .auth-feature i { color: #74C69D; font-size: 1.6rem; flex-shrink: 0; }
+        .auth-right {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            padding: 2rem; background: #FAF9F7;
+        }
+        .auth-form-wrap { width: 100%; max-width: 460px; }
+        .auth-title { font-family: 'Cormorant Garamond', serif; font-size: 2.25rem; font-weight: 700; color: #1A1A1A; margin-bottom: 0.25rem; }
+        .auth-subtitle { font-size: 1.14rem; color: #6B7280; margin-bottom: 1.75rem; }
+        .form-label { font-size: 1.14rem; font-weight: 500; color: #374151; }
+        .form-control { border-color: #E0E0DC; border-radius: 9px; padding: 0.55rem 0.9rem; font-size: 1.14rem; }
+        .form-control:focus { border-color: var(--ps-primary); box-shadow: 0 0 0 3px rgba(44,110,73,0.1); outline: none; }
+        .input-group .form-control { border-right: none; }
+        .input-group-text { background: #fff; border-color: #E0E0DC; border-left: none; border-radius: 0 9px 9px 0; cursor: pointer; }
+        .btn-signin {
+            background: var(--ps-primary); color: #fff; border: none;
+            border-radius: 9px; padding: 0.7rem; font-size: 1.2rem; font-weight: 600;
+            width: 100%; transition: background 0.15s; cursor: pointer;
+        }
+        .btn-signin:hover { background: var(--ps-primary-dark); }
+        .divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; color: #C4C4BE; font-size: 1.08rem; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #E8E8E6; }
+        .btn-social {
+            width: 100%; padding: 0.6rem; border: 1.5px solid #E8E8E6; border-radius: 9px;
+            background: #fff; font-size: 1.14rem; font-weight: 500; color: #1A1A1A;
+            display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+            cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; text-decoration: none;
+        }
+        .btn-social:hover { border-color: #B0B0A8; box-shadow: 0 2px 8px rgba(0,0,0,0.07); color: #1A1A1A; }
+        .btn-social svg { width: 20px; height: 20px; }
+        .demo-card { background: #fff; border: 1px solid #E8E8E6; border-radius: 10px; padding: 0.85rem 1rem; margin-top: 1.5rem; }
+        .demo-label { font-size: 1.08rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #C4C4BE; margin-bottom: 0.5rem; }
+        .demo-row { display: flex; justify-content: space-between; font-size: 1.08rem; margin-bottom: 0.25rem; }
+        .demo-role { color: #6B7280; }
+        code { font-size: 1.05rem; color: var(--ps-primary); }
+        @@media (max-width: 768px) { .auth-left { display: none; } }
+    </style>
+</head>
+<body>
+<div class="auth-left">
+    <div style="position:relative;z-index:1;">
+        <div class="auth-brand">Pharma<span>Skincare</span></div>
+        <div class="auth-tagline">Pharmaceutical-grade skincare powered by magnesium science and natural wellness.</div>
+        <div class="auth-features">
+            <div class="auth-feature"><i class="bi bi-shield-check"></i> Healthcare-certified products</div>
+            <div class="auth-feature"><i class="bi bi-award"></i> Doctor-endorsed formulas</div>
+            <div class="auth-feature"><i class="bi bi-truck"></i> Free delivery in Jordan over JD 40</div>
+            <div class="auth-feature"><i class="bi bi-arrow-repeat"></i> 30-day hassle-free returns</div>
+        </div>
+    </div>
+</div>
+
+<div class="auth-right">
+    <div class="auth-form-wrap">
+        <div class="auth-title">Welcome back</div>
+        <div class="auth-subtitle">Sign in to your account to continue</div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger py-2 px-3 mb-3" style="font-size:0.984rem;border-radius:9px;border:none;">
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+        @if (TempData["Info"] != null)
+        {
+            <div class="alert alert-info py-2 px-3 mb-3" style="font-size:0.984rem;border-radius:9px;border:none;">@TempData["Info"]</div>
+        }
+
+        <!-- Social login -->
+        <div class="d-flex flex-column gap-2 mb-3">
+            @{
+                var hasGoogle = !string.IsNullOrEmpty(ViewBag.GoogleConfigured as string) || (bool?)ViewBag.GoogleConfigured == true;
+            }
+            <a href="/Account/ExternalLogin?provider=Google&returnUrl=@ViewData["ReturnUrl"]" class="btn-social">
+                <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+                Continue with Google
+            </a>
+            <a href="/Account/ExternalLogin?provider=Facebook&returnUrl=@ViewData["ReturnUrl"]" class="btn-social">
+                <svg viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.971h-1.513c-1.491 0-1.956.932-1.956 1.889v2.263h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+                Continue with Facebook
+            </a>
+        </div>
+
+        <div class="divider">or sign in with email</div>
+
+        <form asp-action="Login" method="post">
+            <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label">Email Address</label>
+                <input asp-for="Email" type="email" class="form-control" placeholder="you@example.com" autocomplete="email" />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label">Password</label>
+                <div class="input-group">
+                    <input asp-for="Password" type="password" id="pwInput" class="form-control" placeholder="••••••••" autocomplete="current-password" style="border-radius:9px 0 0 9px;" />
+                    <button type="button" class="input-group-text" onclick="togglePw()" tabindex="-1">
+                        <i class="bi bi-eye" id="pwIcon" style="font-size:1.02rem;color:#9CA3AF;"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mb-4" style="font-size:1.14rem;">
+                <div class="form-check mb-0">
+                    <input asp-for="RememberMe" class="form-check-input" type="checkbox" />
+                    <label asp-for="RememberMe" class="form-check-label" style="font-size:0.96rem;">Remember me</label>
+                </div>
+                <a asp-action="ForgotPassword" class="text-decoration-none" style="color:var(--ps-primary);">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn-signin">Sign In</button>
+        </form>
+
+        <div class="text-center mt-3" style="font-size:1.14rem;color:#6B7280;">
+            Don't have an account?
+            <a asp-action="Register" style="color:var(--ps-primary);font-weight:500;text-decoration:none;">Create one</a>
+        </div>
+
+        <!-- Demo credentials -->
+                                                                            @* <div class="demo-card">
+                                                                                <div class="demo-label">Demo Credentials</div>
+                                                                                <div class="demo-row"><span class="demo-role">Admin</span><code>admin@pharmaskincare.com / Admin@123!</code></div>
+                                                                                <div class="demo-row"><span class="demo-role">Warehouse</span><code>warehouse@pharmaskincare.com / Warehouse@123!</code></div>
+                                                                                <div class="demo-row"><span class="demo-role">Marketing</span><code>marketing@pharmaskincare.com / Marketing@123!</code></div>
+                                                                                <div class="demo-row"><span class="demo-role">Customer</span><code>customer@example.com / Customer@123!</code></div>
+                                                                            </div> *@
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function togglePw() {
+    const i = document.getElementById('pwInput');
+    const ic = document.getElementById('pwIcon');
+    i.type = i.type === 'password' ? 'text' : 'password';
+    ic.className = i.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+    ic.style.color = '#9CA3AF';
+    ic.style.fontSize = '0.85rem';
+}
+</script>
+</body>
+</html>

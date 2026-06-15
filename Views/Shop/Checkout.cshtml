@@ -1,0 +1,397 @@
+@model PharmaSkincare.ViewModels.CreateOrderViewModel
+@{ ViewData["Title"] = "Checkout"; Layout = "_ShopLayout"; }
+
+@{
+    var stripeKeySec = ViewBag.StripePublishableKey as string ?? "";
+    var hasStripe = !string.IsNullOrEmpty(stripeKeySec) && !stripeKeySec.StartsWith("pk_test_YOUR");
+    var subtotal = Model.CartItems.Sum(i => i.UnitPrice * i.Quantity);
+    var shipping = subtotal >= 40 ? 0m : 5.00m;
+    var total = subtotal + shipping;
+}
+
+<div class="container-shop" style="padding-top:3rem;padding-bottom:5rem;">
+    <div class="mb-3">
+        <a asp-controller="Cart" asp-action="Index" style="font-size:1.08rem;color:var(--ps-mid);text-decoration:none;">
+            <i class="bi bi-arrow-left me-1"></i>Back to Basket
+        </a>
+    </div>
+    <h1 style="font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:700;margin-bottom:2rem;">Checkout</h1>
+
+    <div class="row g-4">
+        <!-- Left: Address + Payment -->
+        <div class="col-lg-7">
+            <form asp-action="PlaceOrder" method="post" id="orderForm">
+                @Html.AntiForgeryToken()
+
+                <!-- Shipping address -->
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.75rem;margin-bottom:1.25rem;">
+                    <h5 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.375rem;margin-bottom:1.25rem;">
+                        <i class="bi bi-geo-alt me-2" style="color:var(--ps-primary);"></i>Shipping Address
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label asp-for="ShippingAddress" class="form-label">Street Address</label>
+                            <input asp-for="ShippingAddress" class="form-control" placeholder="123 Al-Madina Street" />
+                            <span asp-validation-for="ShippingAddress" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-5">
+                            <label asp-for="City" class="form-label">City</label>
+                            <input asp-for="City" class="form-control" placeholder="Amman" />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="PostalCode" class="form-label">Postal Code</label>
+                            <input asp-for="PostalCode" class="form-control" placeholder="11110" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Country" class="form-label">Country</label>
+                            <input asp-for="Country" class="form-control" placeholder="Jordan" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment -->
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.75rem;margin-bottom:1.25rem;">
+                    <h5 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.375rem;margin-bottom:1.25rem;">
+                        <i class="bi bi-lock me-2" style="color:var(--ps-primary);"></i>Payment
+                    </h5>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var pm in new[] { ("Card", "bi-credit-card"), ("Cash", "bi-cash") })
+                            {
+                                <label style="cursor:pointer;">
+                                    <input type="radio" name="PaymentMethod" value="@pm.Item1" class="visually-hidden"
+                                           onchange="toggleStripe(this.value)"
+                                           @(pm.Item1 == "Card" ? "checked" : "") />
+                                    <span class="pm-chip @(pm.Item1 == "Card" ? "active" : "")">
+                                        <i class="bi @pm.Item2 me-1"></i>@pm.Item1
+                                    </span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+
+                    @if (hasStripe)
+                    {
+                        <div id="stripe-element-wrap">
+                            <!-- Card preview strip -->
+                            <div style="background:linear-gradient(135deg,#1B4332 0%,#2C6E49 60%,#40916C 100%);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff;display:flex;justify-content:space-between;align-items:flex-end;">
+                                <div>
+                                    <div style="font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;opacity:0.65;margin-bottom:0.3rem;">Card Number</div>
+                                    <div id="cardPreviewNumber" style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;letter-spacing:0.12em;">•••• •••• •••• ••••</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;opacity:0.65;margin-bottom:0.25rem;">Expires</div>
+                                    <div id="cardPreviewExpiry" style="font-size:1.05rem;letter-spacing:0.05em;">MM / YY</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label"><i class="bi bi-person me-1" style="color:var(--ps-primary);"></i>Cardholder Name</label>
+                                <input type="text" id="cardholderName" class="form-control" placeholder="Name as it appears on card" autocomplete="cc-name" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label"><i class="bi bi-credit-card me-1" style="color:var(--ps-primary);"></i>Card Number</label>
+                                <div id="stripe-number" class="stripe-field"></div>
+                            </div>
+                            <div class="row g-3 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label"><i class="bi bi-calendar me-1" style="color:var(--ps-primary);"></i>Expiry Date</label>
+                                    <div id="stripe-expiry" class="stripe-field"></div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label"><i class="bi bi-lock me-1" style="color:var(--ps-primary);"></i>CVC</label>
+                                    <div id="stripe-cvc" class="stripe-field"></div>
+                                </div>
+                            </div>
+                            <div id="stripe-errors" class="text-danger small mt-1 mb-2"></div>
+                            <div style="font-size:0.875rem;color:var(--ps-mid);display:flex;align-items:center;gap:0.4rem;margin-top:0.5rem;">
+                                <i class="bi bi-shield-lock-fill" style="color:var(--ps-primary);"></i>
+                                Payments are encrypted and processed securely by Stripe.
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="background:#F0F7F2;border:1px solid var(--ps-primary-light);border-radius:12px;padding:1rem 1.1rem;font-size:1.02rem;color:#2C6E49;">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Card payment is not configured. Please choose <strong>Cash on Delivery</strong>.
+                        </div>
+                    }
+                </div>
+
+                <!-- Notes -->
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.75rem;margin-bottom:1.5rem;">
+                    <label asp-for="Notes" class="form-label">Order Notes <span style="color:var(--ps-mid);font-weight:400;">(optional)</span></label>
+                    <textarea asp-for="Notes" class="form-control" rows="2" placeholder="Special instructions, delivery preferences…" style="border-radius:9px;"></textarea>
+                </div>
+
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.25rem 1.75rem;margin-bottom:1.25rem;">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="policyCheck" style="width:1.1rem;height:1.1rem;margin-top:0.2rem;" />
+                        <label class="form-check-label" for="policyCheck" style="font-size:1.02rem;padding-left:0.25rem;">
+                            I have read and agree to the <a href="#" onclick="event.preventDefault();document.getElementById('modalTnC').style.display='flex';" style="color:var(--ps-primary);text-decoration:underline;">Terms &amp; Conditions</a> and <a href="#" onclick="event.preventDefault();document.getElementById('modalReturns').style.display='flex';" style="color:var(--ps-primary);text-decoration:underline;">Returns Policy</a>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" id="placeOrderBtn" class="btn-ps w-100 justify-content-center" style="display:flex;font-size:1.0625rem;padding:0.9rem;">
+                    <i class="bi bi-check-circle me-2"></i>Place Order — JD @total.ToString("N2")
+                </button>
+            </form>
+        </div>
+
+        <!-- Right: Order summary -->
+        <div class="col-lg-5">
+            <div class="ps-sticky">
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.5rem;">
+                    <h5 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.375rem;margin-bottom:1.25rem;">
+                        Your Order (@Model.CartItems.Count item@(Model.CartItems.Count!=1?"s":""))
+                    </h5>
+
+                    @foreach (var item in Model.CartItems)
+                    {
+                        <div style="display:flex;align-items:center;gap:0.875rem;margin-bottom:0.875rem;padding-bottom:0.875rem;border-bottom:1px solid var(--ps-border);">
+                            <div style="width:54px;height:54px;background:#F0F7F2;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" alt="@item.ProductName" style="width:100%;height:100%;object-fit:cover;" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-droplet-half" style="color:#74C69D;opacity:0.6;"></i>
+                                }
+                            </div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-weight:600;font-size:1.08rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@item.ProductName</div>
+                                <div style="font-size:0.975rem;color:var(--ps-mid);">Qty: @item.Quantity</div>
+                            </div>
+                            <div style="font-weight:600;font-size:1.125rem;white-space:nowrap;">JD @((item.UnitPrice * item.Quantity).ToString("N2"))</div>
+                        </div>
+                    }
+
+                    <div style="display:flex;justify-content:space-between;font-size:1.125rem;margin-bottom:0.5rem;">
+                        <span style="color:var(--ps-mid);">Subtotal</span><span>JD @subtotal.ToString("N2")</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:1.125rem;margin-bottom:0.875rem;">
+                        <span style="color:var(--ps-mid);">Shipping</span>
+                        @if (shipping == 0) { <span style="color:#22C55E;font-weight:600;">Free</span> }
+                        else { <span>JD @shipping.ToString("N2")</span> }
+                    </div>
+                    <hr style="border-color:var(--ps-border);margin:0.875rem 0;" />
+                    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem;">
+                        <span>Total</span>
+                        <span style="color:var(--ps-primary);font-family:'Cormorant Garamond',serif;font-size:1.5rem;">JD @total.ToString("N2")</span>
+                    </div>
+                </div>
+
+                <div style="background:#F0F7F2;border-radius:14px;padding:1.1rem;margin-top:1rem;font-size:1.05rem;color:#4B5563;">
+                    <div style="display:flex;gap:0.5rem;align-items:flex-start;margin-bottom:0.4rem;">
+                        <i class="bi bi-shield-check" style="color:var(--ps-primary);margin-top:2px;"></i>
+                        <div><strong>Secure checkout</strong><br /><span style="color:var(--ps-mid);">Pharmaceutical-grade · Free 30-day returns · Discreet packaging</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms & Conditions Modal -->
+<div id="modalTnC" class="ps-modal-overlay" onclick="if(event.target===this)this.style.display='none';">
+    <div class="ps-modal-box">
+        <div class="ps-modal-header">
+            <h5>Terms &amp; Conditions</h5>
+            <button onclick="document.getElementById('modalTnC').style.display='none';" class="ps-modal-close">&times;</button>
+        </div>
+        <div class="ps-modal-body">
+            <p><strong>Last updated: @DateTime.UtcNow.ToString("MMMM yyyy")</strong></p>
+
+            <h6>1. Acceptance of Terms</h6>
+            <p>By placing an order on this website, you confirm that you are at least 18 years of age and agree to be bound by these Terms &amp; Conditions. PharmaSkincare Ltd reserves the right to amend these terms at any time.</p>
+
+            <h6>2. Products &amp; Health Information</h6>
+            <p>Our products are topical wellness formulations and are not intended to diagnose, treat, cure, or prevent any medical condition. They are not a substitute for professional medical advice. If you have an existing medical condition or are taking prescription medication, consult your GP before use.</p>
+
+            <h6>3. Orders &amp; Pricing</h6>
+            <p>All prices are displayed in Jordanian Dinar (JD) and include applicable taxes where required. We reserve the right to cancel or refuse any order if a pricing error occurs. You will be notified and a full refund issued if an order cannot be fulfilled.</p>
+
+            <h6>4. Payment</h6>
+            <p>Payments are processed securely via Stripe. We do not store your card details. By submitting your order you authorise us to charge the total amount shown at checkout.</p>
+
+            <h6>5. Delivery</h6>
+            <p>Standard delivery within Jordan is JD 5.00 and free on orders over JD 40. Estimated delivery is 2–4 working days. We are not liable for delays caused by third-party couriers or circumstances outside our control.</p>
+
+            <h6>6. Intellectual Property</h6>
+            <p>All content on this website — including text, images, and branding — is the property of PharmaSkincare Ltd. Reproduction without written consent is prohibited.</p>
+
+            <h6>7. Governing Law</h6>
+            <p>These Terms are governed by the laws of the Hashemite Kingdom of Jordan. Any disputes shall be subject to the exclusive jurisdiction of the courts of Jordan.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Returns Policy Modal -->
+<div id="modalReturns" class="ps-modal-overlay" onclick="if(event.target===this)this.style.display='none';">
+    <div class="ps-modal-box">
+        <div class="ps-modal-header">
+            <h5>Returns Policy</h5>
+            <button onclick="document.getElementById('modalReturns').style.display='none';" class="ps-modal-close">&times;</button>
+        </div>
+        <div class="ps-modal-body">
+            <p><strong>Last updated: @DateTime.UtcNow.ToString("MMMM yyyy")</strong></p>
+
+            <h6>30-Day Satisfaction Guarantee</h6>
+            <p>We stand behind every product we sell. If you are not completely satisfied, you may return any item within <strong>30 days</strong> of the delivery date for a full refund or exchange — no questions asked.</p>
+
+            <h6>Eligibility</h6>
+            <ul>
+                <li>Items must be returned in their original packaging.</li>
+                <li>Partially used products are accepted if you experienced an adverse reaction or were not satisfied with results.</li>
+                <li>Items purchased as part of a bundle must be returned as a complete set.</li>
+            </ul>
+
+            <h6>How to Return</h6>
+            <ol>
+                <li>Email <strong>support@@pharmaskincare.com</strong> with your order number and reason for return.</li>
+                <li>We will send you a prepaid return label within 1 business day.</li>
+                <li>Pack the item securely; our courier will collect it from your address.</li>
+                <li>Refunds are processed within 5 business days of us receiving the return.</li>
+            </ol>
+
+            <h6>Refund Method</h6>
+            <p>Refunds are issued to the original payment method. Shipping costs are refunded only if the return is due to a damaged or incorrect item.</p>
+
+            <h6>Damaged or Incorrect Items</h6>
+            <p>If you receive a damaged or incorrect item, please contact us within <strong>48 hours</strong> of delivery with a photo of the item. We will arrange a replacement or full refund at no cost to you.</p>
+
+            <h6>Contact</h6>
+            <p>Questions? Email <strong>support@@pharmaskincare.com</strong> or call <strong>+962 6 500 1000</strong> (Sun–Thu, 9am–5pm AST).</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .ps-modal-overlay {
+        display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;
+        align-items:center;justify-content:center;padding:1rem;
+    }
+    .ps-modal-box {
+        background:#fff;border-radius:16px;width:100%;max-width:580px;
+        max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.18);
+    }
+    .ps-modal-header {
+        display:flex;align-items:center;justify-content:space-between;
+        padding:1.25rem 1.5rem;border-bottom:1px solid var(--ps-border);
+        font-family:'Cormorant Garamond',serif;
+    }
+    .ps-modal-header h5 { margin:0;font-size:1.35rem;font-weight:700;color:var(--ps-primary); }
+    .ps-modal-close {
+        background:none;border:none;font-size:1.6rem;line-height:1;cursor:pointer;
+        color:var(--ps-mid);padding:0 0.25rem;
+    }
+    .ps-modal-close:hover { color:#333; }
+    .ps-modal-body {
+        padding:1.5rem;overflow-y:auto;font-size:1.02rem;line-height:1.7;color:#444;
+    }
+    .ps-modal-body h6 { font-weight:700;color:var(--ps-primary);margin:1.1rem 0 0.35rem; }
+    .ps-modal-body p, .ps-modal-body ul, .ps-modal-body ol { margin-bottom:0.75rem; }
+    .ps-modal-body ul, .ps-modal-body ol { padding-left:1.25rem; }
+    .pm-chip {
+        display:inline-flex;align-items:center;
+        border:1.5px solid var(--ps-border);border-radius:9px;
+        padding:0.45rem 1rem;font-size:1.05rem;font-weight:500;
+        color:var(--ps-mid);background:#fff;transition:all 0.15s;cursor:pointer;
+    }
+    input[type=radio]:checked + .pm-chip, .pm-chip.active {
+        border-color:var(--ps-primary);background:var(--ps-primary-light);color:var(--ps-primary);
+    }
+    .stripe-field {
+        border:1px solid #E0E0DC; border-radius:9px;
+        padding:0.75rem 0.9rem; background:#fff;
+        transition:border-color 0.15s, box-shadow 0.15s;
+    }
+    .stripe-field:focus-within {
+        border-color:var(--ps-primary); box-shadow:0 0 0 3px rgba(44,110,73,0.1);
+    }
+</style>
+
+@section Scripts {
+    @{
+        var sk2 = ViewBag.StripePublishableKey as string ?? "";
+        var hs2 = !string.IsNullOrEmpty(sk2) && !sk2.StartsWith("pk_test_YOUR");
+    }
+    @if (hs2)
+    {
+        <script src="https://js.stripe.com/v3/"></script>
+        <script>
+        const stripe = Stripe('@sk2');
+        const elements = stripe.elements();
+        const elStyle = { base: { fontFamily: "'Inter', 'Segoe UI', sans-serif", fontSize: '17px', color: '#1A1A1A', '::placeholder': { color: '#9CA3AF' } } };
+        const cardNumber = elements.create('cardNumber', { style: elStyle, showIcon: true });
+        const cardExpiry = elements.create('cardExpiry', { style: elStyle });
+        const cardCvc    = elements.create('cardCvc',    { style: elStyle });
+        cardNumber.mount('#stripe-number');
+        cardExpiry.mount('#stripe-expiry');
+        cardCvc.mount('#stripe-cvc');
+        cardNumber.on('change', e => {
+            document.getElementById('stripe-errors').textContent = e.error?.message ?? '';
+        });
+        [cardExpiry, cardCvc].forEach(el =>
+            el.on('change', e => { if (e.error) document.getElementById('stripe-errors').textContent = e.error.message; })
+        );
+        // Update card preview
+        cardNumber.on('change', e => {
+            const prev = document.getElementById('cardPreviewNumber');
+            if (prev) prev.textContent = e.value?.length ? '•••• •••• •••• ' + (e.value || '').slice(-4).padStart(4,'•') : '•••• •••• •••• ••••';
+        });
+        cardExpiry.on('change', e => {
+            const prev = document.getElementById('cardPreviewExpiry');
+            if (prev && e.value) prev.textContent = e.value;
+        });
+
+        document.getElementById('orderForm').addEventListener('submit', async function(e) {
+            const policy = document.getElementById('policyCheck');
+            if (policy && !policy.checked) {
+                e.preventDefault();
+                Swal?.fire({ icon: 'warning', title: 'Please accept the policy', text: 'You must agree to our Terms & Conditions before placing your order.', confirmButtonColor: '#1a7a5e' });
+                return;
+            }
+            if (document.querySelector('input[name=PaymentMethod]:checked')?.value !== 'Card') return;
+            e.preventDefault();
+            const btn = document.getElementById('placeOrderBtn');
+            btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing…';
+            const clientSecret = '@(ViewBag.StripeClientSecret ?? "")';
+            if (clientSecret) {
+                const name = document.getElementById('cardholderName')?.value ?? '';
+                const { error } = await stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardNumber, billing_details: { name } } });
+                if (error) {
+                    document.getElementById('stripe-errors').textContent = error.message;
+                    btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Place Order — JD @total.ToString("N2")';
+                } else { this.submit(); }
+            } else { this.submit(); }
+        });
+        </script>
+    }
+    <script>
+    function toggleStripe(val) {
+        const w = document.getElementById('stripe-element-wrap');
+        if (w) w.style.display = val === 'Card' ? 'block' : 'none';
+    }
+    document.querySelectorAll('.pm-chip').forEach(chip => {
+        chip.closest('label')?.querySelector('input')?.addEventListener('change', function() {
+            document.querySelectorAll('.pm-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+        });
+    });
+    // Policy check also enforced for non-card methods
+    document.getElementById('orderForm')?.addEventListener('submit', function(e) {
+        if (typeof Stripe === 'undefined') {
+            const policy = document.getElementById('policyCheck');
+            if (policy && !policy.checked) {
+                e.preventDefault();
+                Swal?.fire({ icon: 'warning', title: 'Please accept the policy', text: 'You must agree to our Terms & Conditions before placing your order.', confirmButtonColor: '#1a7a5e' });
+            }
+        }
+    }, true);
+    </script>
+}

@@ -1,0 +1,208 @@
+@model List<PharmaSkincare.Models.CartItem>
+@{ ViewData["Title"] = "Your Basket"; Layout = "_ShopLayout"; }
+
+<style>
+    .cart-row { display:flex; align-items:center; gap:1.25rem; padding:1.25rem 1.5rem; }
+    .cart-controls { display:contents; } /* invisible wrapper on desktop — children become direct flex items */
+    @@media (max-width: 575.98px) {
+        .cart-row { flex-wrap: wrap; padding: 1rem 1rem 0.75rem; gap: 0.75rem; }
+        .cart-row .cart-img-wrap { width: 64px !important; height: 64px !important; }
+        .cart-controls { display: flex !important; align-items: center; gap: 0.75rem; margin-left: calc(64px + 0.75rem); width: 100%; padding-bottom: 0.25rem; }
+    }
+</style>
+
+@section Scripts {
+<script>
+// Remove item confirmation
+document.querySelectorAll('form[action*="Remove"]').forEach(f => {
+    f.addEventListener('submit', function(e) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Remove item?',
+            text: 'This will remove the item from your basket.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: 'Remove',
+            cancelButtonText: 'Keep it'
+        }).then(r => { if (r.isConfirmed) this.submit(); });
+    });
+});
+// Clear basket confirmation
+document.querySelectorAll('form[action*="Clear"]').forEach(f => {
+    f.addEventListener('submit', function(e) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Clear entire basket?',
+            text: 'All items will be removed.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: 'Clear basket',
+            cancelButtonText: 'Cancel'
+        }).then(r => { if (r.isConfirmed) this.submit(); });
+    });
+});
+</script>
+}
+
+<div class="container-shop" style="padding-top:3rem;padding-bottom:5rem;">
+    <div class="mb-4">
+        <a asp-controller="Shop" asp-action="Index" style="font-size:1.08rem;color:var(--ps-mid);text-decoration:none;">
+            <i class="bi bi-arrow-left me-1"></i>Continue Shopping
+        </a>
+    </div>
+    <h1 style="font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:700;margin-bottom:0.25rem;">Your Basket</h1>
+    <p style="color:var(--ps-mid);margin-bottom:2.5rem;">@Model.Sum(i => i.Quantity) item@(Model.Sum(i=>i.Quantity)!=1?"s":"")</p>
+
+    @if (!Model.Any())
+    {
+        <div style="text-align:center;padding:5rem 0;">
+            <i class="bi bi-basket" style="font-size:4rem;color:#C4C4BE;display:block;margin-bottom:1.5rem;"></i>
+            <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;margin-bottom:0.75rem;">Your basket is empty</h3>
+            <p style="color:var(--ps-mid);margin-bottom:2rem;">Discover our pharmaceutical-grade skincare range.</p>
+            <a asp-controller="Shop" asp-action="Index" class="btn-ps">Shop Now</a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <!-- Items -->
+            <div class="col-lg-8">
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;overflow:hidden;">
+                    @foreach (var (item, idx) in Model.Select((x, i) => (x, i)))
+                    {
+                        <div class="cart-row" style="@(idx < Model.Count-1 ? "border-bottom:1px solid var(--ps-border);" : "")">
+                            <!-- Image -->
+                            <div class="cart-img-wrap" style="width:80px;height:80px;background:#F0F7F2;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" alt="@item.ProductName" style="width:100%;height:100%;object-fit:cover;" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-droplet-half" style="font-size:1.75rem;color:#74C69D;opacity:0.6;"></i>
+                                }
+                            </div>
+
+                            <!-- Info -->
+                            <div style="flex:1;min-width:0;">
+                                @if (!string.IsNullOrEmpty(item.CategoryName))
+                                {
+                                    <div style="font-size:0.96rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--ps-primary);margin-bottom:0.2rem;">@item.CategoryName</div>
+                                }
+                                <div style="font-family:'Cormorant Garamond',serif;font-size:1.125rem;font-weight:700;line-height:1.2;margin-bottom:0.2rem;">@item.ProductName</div>
+                                @if (!string.IsNullOrEmpty(item.VariantSize))
+                                {
+                                    <div style="font-size:0.88rem;color:var(--ps-mid);margin-bottom:0.1rem;"><i class="bi bi-rulers me-1"></i>@item.VariantSize</div>
+                                }
+                                <div style="font-size:1rem;font-weight:600;color:var(--ps-primary);margin-top:0.25rem;">JD @item.UnitPrice.ToString("N2") each</div>
+                            </div>
+
+                            <!-- Qty + Subtotal + Remove (wrapped together on mobile) -->
+                            <div class="cart-controls" style="display:contents;">
+                                <form asp-action="UpdateQty" method="post" style="display:flex;align-items:center;gap:0.5rem;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="productId" value="@item.ProductId" />
+                                    <div style="display:flex;align-items:center;border:1.5px solid var(--ps-border);border-radius:10px;overflow:hidden;">
+                                        <button type="submit" name="qty" value="@(item.Quantity - 1)"
+                                                style="width:36px;height:36px;background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ps-mid);">−</button>
+                                        <span style="width:36px;text-align:center;font-weight:600;font-size:1.125rem;">@item.Quantity</span>
+                                        <button type="submit" name="qty" value="@(item.Quantity + 1)"
+                                                style="width:36px;height:36px;background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ps-mid);">+</button>
+                                    </div>
+                                </form>
+
+                                <div style="flex-shrink:0;font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:700;color:var(--ps-dark);">JD @item.Subtotal.ToString("N2")</div>
+
+                                <form asp-action="Remove" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="productId" value="@item.ProductId" />
+                                    <button type="submit" style="width:32px;height:32px;background:none;border:1px solid var(--ps-border);border-radius:8px;color:var(--ps-mid);cursor:pointer;font-size:1.05rem;transition:all 0.15s;"
+                                            onmouseover="this.style.borderColor='#dc2626';this.style.color='#dc2626'"
+                                            onmouseout="this.style.borderColor='var(--ps-border)';this.style.color='var(--ps-mid)'">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <a asp-controller="Shop" asp-action="Index" style="font-size:1.08rem;color:var(--ps-mid);text-decoration:none;">
+                        <i class="bi bi-arrow-left me-1"></i>Continue Shopping
+                    </a>
+                    <form asp-action="Clear" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" style="background:none;border:none;font-size:1.05rem;color:var(--ps-mid);cursor:pointer;text-decoration:underline;">
+                            Clear basket
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="ps-sticky">
+                    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.5rem;">
+                        <h5 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.375rem;margin-bottom:1.25rem;">Order Summary</h5>
+
+                        @foreach (var item in Model)
+                        {
+                            <div style="display:flex;justify-content:space-between;font-size:1.05rem;margin-bottom:0.5rem;">
+                                <span style="color:var(--ps-mid);">@item.ProductName@(!string.IsNullOrEmpty(item.VariantSize) ? $" ({item.VariantSize})" : "") × @item.Quantity</span>
+                                <span>JD @item.Subtotal.ToString("N2")</span>
+                            </div>
+                        }
+                        <hr style="border-color:var(--ps-border);margin:1rem 0;" />
+                        @{
+                            var subtotal = Model.Sum(i => i.Subtotal);
+                            var shipping = subtotal >= 40 ? 0m : 5.00m;
+                            var total = subtotal + shipping;
+                        }
+                        <div style="display:flex;justify-content:space-between;font-size:1.125rem;margin-bottom:0.5rem;">
+                            <span style="color:var(--ps-mid);">Subtotal</span>
+                            <span>JD @subtotal.ToString("N2")</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:1.125rem;margin-bottom:0.75rem;">
+                            <span style="color:var(--ps-mid);">Shipping</span>
+                            @if (shipping == 0)
+                            {
+                                <span style="color:#22C55E;font-weight:600;">Free</span>
+                            }
+                            else
+                            {
+                                <span>JD @shipping.ToString("N2")</span>
+                            }
+                        </div>
+                        @if (shipping > 0)
+                        {
+                            <div style="font-size:0.975rem;color:var(--ps-mid);background:#F9F9F7;border-radius:8px;padding:0.5rem 0.75rem;margin-bottom:0.75rem;">
+                                <i class="bi bi-truck me-1"></i>Add JD @((40 - subtotal).ToString("N2")) more for free delivery
+                            </div>
+                        }
+                        <hr style="border-color:var(--ps-border);margin:0.75rem 0;" />
+                        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1.125rem;margin-bottom:1.5rem;">
+                            <span>Total</span>
+                            <span style="color:var(--ps-primary);font-family:'Cormorant Garamond',serif;font-size:1.5rem;">JD @total.ToString("N2")</span>
+                        </div>
+
+                        <a asp-controller="Shop" asp-action="Checkout" class="btn-ps w-100 justify-content-center" style="display:flex;">
+                            <i class="bi bi-lock-fill me-2"></i>Proceed to Checkout
+                        </a>
+
+                        <div style="margin-top:1.25rem;padding:0.875rem;background:#F0F7F2;border-radius:10px;font-size:0.975rem;color:#374151;">
+                            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;font-weight:600;">
+                                <i class="bi bi-shield-check" style="color:var(--ps-primary);"></i> Secure checkout
+                            </div>
+                            <div style="color:var(--ps-mid);">Pharmaceutical-grade products · Free 30-day returns</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

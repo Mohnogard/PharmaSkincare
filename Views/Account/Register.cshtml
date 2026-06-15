@@ -1,0 +1,211 @@
+@model PharmaSkincare.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Account — PharmaSkincare</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        html { font-size: 19px; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #F9FAF8; min-height: 100vh; display: flex; }
+
+        /* ── Left panel ── */
+        .reg-left {
+            flex: 0 0 45%;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(145deg, #1B4332 0%, #2C6E49 60%, #3A8A5C 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 3rem;
+        }
+        /* ── Image placeholder ── */
+        /* To add your image: set src="your-image.jpg" on the img below */
+        .reg-left-img {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+        .reg-left-placeholder {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 0.75rem; opacity: 0.18; pointer-events: none;
+        }
+        .reg-left-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(27,67,50,0.92) 0%, rgba(27,67,50,0.35) 60%, rgba(27,67,50,0.15) 100%);
+        }
+        .reg-left-content { position: relative; z-index: 2; }
+        .reg-brand {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem; font-weight: 700; color: #fff;
+            text-decoration: none; letter-spacing: -0.01em;
+        }
+        .reg-brand em { color: #74C69D; font-style: normal; }
+        .reg-quote {
+            margin-top: 1.25rem;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.4rem; font-weight: 600;
+            color: #fff; line-height: 1.4;
+            max-width: 340px;
+        }
+        .reg-tagline { font-size: 1.08rem; color: rgba(255,255,255,0.65); margin-top: 0.5rem; line-height: 1.55; max-width: 320px; }
+        .reg-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+        .reg-badge {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px; padding: 0.3rem 0.85rem;
+            font-size: 0.96rem; font-weight: 600; color: rgba(255,255,255,0.8);
+            display: flex; align-items: center; gap: 0.35rem;
+        }
+
+        /* ── Right panel ── */
+        .reg-right {
+            flex: 1;
+            display: flex; align-items: center; justify-content: center;
+            padding: 3rem 2.5rem;
+            overflow-y: auto;
+        }
+        .reg-form-wrap { width: 100%; max-width: 440px; }
+        .reg-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem; font-weight: 700;
+            color: #1A1A1A; margin-bottom: 0.3rem; line-height: 1.15;
+        }
+        .reg-subtitle { font-size: 1.14rem; color: #6B7280; margin-bottom: 2rem; }
+
+        .form-label { font-size: 1.14rem; font-weight: 500; color: #374151; margin-bottom: 0.4rem; }
+        .form-control {
+            border-color: #D1D8E0; border-radius: 9px;
+            font-size: 1.14rem; padding: 0.65rem 0.9rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .form-control:focus { border-color: #2C6E49; box-shadow: 0 0 0 3px rgba(44,110,73,0.1); outline: none; }
+        .form-control::placeholder { color: #9CA3AF; }
+        .text-danger { font-size: 1.02rem; }
+
+        .btn-reg {
+            background: #2C6E49; color: #fff; border: none;
+            border-radius: 10px; padding: 0.8rem 1.5rem;
+            font-size: 1.2rem; font-weight: 600; width: 100%;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: background 0.15s;
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        }
+        .btn-reg:hover { background: #1B4332; }
+
+        .reg-divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; }
+        .reg-divider-line { flex: 1; height: 1px; background: #E8E8E6; }
+        .reg-divider-text { font-size: 1.02rem; color: #9CA3AF; }
+
+        .signin-link { text-align: center; margin-top: 1.25rem; font-size: 1.14rem; color: #6B7280; }
+        .signin-link a { color: #2C6E49; font-weight: 600; text-decoration: none; }
+        .signin-link a:hover { text-decoration: underline; }
+
+        @@media (max-width: 768px) {
+            body { flex-direction: column; }
+            .reg-left { flex: 0 0 auto; min-height: 220px; padding: 2rem; justify-content: flex-end; }
+            .reg-left-placeholder { display: none; }
+            .reg-quote { font-size: 1.2rem; }
+            .reg-right { padding: 2rem 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Left: image placeholder panel ── -->
+<div class="reg-left">
+    <!-- 📷 ADD YOUR IMAGE: set src="path/to/your-image.jpg" below -->
+    <img src="" alt="PharmaSkincare" class="reg-left-img" onerror="this.style.display='none'" />
+
+    <!-- Placeholder visual shown when no image src is set -->
+    <div class="reg-left-placeholder">
+        <i class="bi bi-image" style="font-size:4rem;color:#fff;"></i>
+        <span style="color:#fff;font-size:1.02rem;font-weight:600;">Add your image here</span>
+    </div>
+
+    <!-- Gradient overlay for text readability -->
+    <div class="reg-left-overlay"></div>
+
+    <!-- Content on top -->
+    <div class="reg-left-content">
+        <a asp-controller="Shop" asp-action="Index" class="reg-brand">Pharma<em>Skincare</em></a>
+        <div class="reg-quote">"Science-backed skincare you can trust."</div>
+        <div class="reg-tagline">Join thousands of customers who trust pharmaceutical-grade formulas backed by clinical research.</div>
+        <div class="reg-badges">
+            <span class="reg-badge"><i class="bi bi-shield-check"></i> Clinically Tested</span>
+            <span class="reg-badge"><i class="bi bi-award"></i> Doctor Endorsed</span>
+            <span class="reg-badge"><i class="bi bi-leaf"></i> Cruelty-Free</span>
+        </div>
+    </div>
+</div>
+
+<!-- ── Right: registration form ── -->
+<div class="reg-right">
+    <div class="reg-form-wrap">
+        <div class="reg-title">Create your account</div>
+        <div class="reg-subtitle">Join PharmaSkincare for exclusive benefits &amp; order tracking</div>
+
+        <form asp-action="Register" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 mb-3" style="font-size:1.08rem;border-radius:9px;"></div>
+
+            <div class="row g-3">
+                <div class="col-6">
+                    <label asp-for="FirstName" class="form-label">First Name</label>
+                    <input asp-for="FirstName" class="form-control" placeholder="John" />
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+                <div class="col-6">
+                    <label asp-for="LastName" class="form-label">Last Name</label>
+                    <input asp-for="LastName" class="form-control" placeholder="Smith" />
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Email" class="form-label">Email Address</label>
+                    <input asp-for="Email" type="email" class="form-control" placeholder="john@email.com" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Phone" class="form-label" style="color:#6B7280;">Phone <span style="font-weight:400;">(optional)</span></label>
+                    <input asp-for="Phone" type="tel" class="form-control" placeholder="+962 7 9000 0000" />
+                </div>
+                <div class="col-6">
+                    <label asp-for="Password" class="form-label">Password</label>
+                    <input asp-for="Password" type="password" class="form-control" placeholder="Min 8 characters" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+                <div class="col-6">
+                    <label asp-for="ConfirmPassword" class="form-label">Confirm</label>
+                    <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Repeat password" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn-reg">
+                    <i class="bi bi-person-check"></i> Create Account
+                </button>
+            </div>
+        </form>
+
+        <div class="signin-link">
+            Already have an account? <a asp-action="Login">Sign in</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<partial name="_ValidationScriptsPartial" />
+</body>
+</html>

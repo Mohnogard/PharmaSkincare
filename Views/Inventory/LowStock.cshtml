@@ -1,0 +1,65 @@
+@model IEnumerable<PharmaSkincare.Models.Product>
+@{ ViewData["Title"] = "Low Stock Alert"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Low Stock Alert</h1>
+        <small class="text-muted">@Model.Count() products below minimum stock level</small>
+    </div>
+    <a asp-action="Adjust" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Adjust Stock</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="form-card text-center py-5">
+        <i class="bi bi-check-circle fs-1 text-success d-block mb-3"></i>
+        <h5>All products are adequately stocked!</h5>
+        <p class="text-muted">No products are currently below their minimum stock levels.</p>
+        <a asp-action="Index" class="btn btn-outline-primary">View All Transactions</a>
+    </div>
+}
+else
+{
+    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>These products require immediate restocking to avoid supply disruptions.</span>
+    </div>
+
+    <div class="table-card">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr><th>Product</th><th>SKU</th><th>Category</th><th>Current Stock</th><th>Minimum Level</th><th>Deficit</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    var deficit = p.MinimumStockLevel - p.StockQuantity;
+                    var pct = p.MinimumStockLevel > 0 ? (double)p.StockQuantity / p.MinimumStockLevel * 100 : 0;
+                    <tr>
+                        <td>
+                            <div style="font-weight:600;">@p.DisplayName</div>
+                            <small class="text-muted">@p.Subcategory?.ProductFormat · @p.Size</small>
+                        </td>
+                        <td><code class="small">@p.SKU</code></td>
+                        <td><span class="badge bg-secondary badge-status">@p.Subcategory?.Category?.Name</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <strong class="stock-low">@p.StockQuantity</strong>
+                                <div class="progress flex-grow-1" style="height:6px;border-radius:3px;width:80px;">
+                                    <div class="progress-bar bg-danger" style="width:@Math.Min(100,pct)%;border-radius:3px;"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-muted">@p.MinimumStockLevel</td>
+                        <td><span class="badge bg-danger">-@deficit units</span></td>
+                        <td>
+                            <a asp-action="Adjust" asp-route-productId="@p.ProductId" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i>Restock
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

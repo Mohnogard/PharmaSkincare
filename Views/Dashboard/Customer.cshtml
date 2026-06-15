@@ -1,0 +1,141 @@
+@model PharmaSkincare.ViewModels.CustomerDashboardViewModel
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "My Account"; Layout = "_ShopLayout"; }
+
+<div class="container-shop" style="padding-top:3rem;padding-bottom:5rem;">
+
+    <!-- Header -->
+    <div style="margin-bottom:2.5rem;">
+        <div style="font-size:0.975rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ps-primary);margin-bottom:0.5rem;">Welcome back</div>
+        <h1 style="font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:700;margin-bottom:0;">@Model.FirstName</h1>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem 1.5rem;text-align:center;">
+                <div style="font-size:2rem;font-family:'Cormorant Garamond',serif;font-weight:700;color:var(--ps-primary);">@Model.TotalOrders</div>
+                <div style="font-size:1.05rem;color:var(--ps-mid);margin-top:0.25rem;">Orders Placed</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem 1.5rem;text-align:center;">
+                <div style="font-size:2rem;font-family:'Cormorant Garamond',serif;font-weight:700;color:var(--ps-primary);">JD @Model.TotalSpent.ToString("N0")</div>
+                <div style="font-size:1.05rem;color:var(--ps-mid);margin-top:0.25rem;">Total Spent</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div style="background:#fff;border:1px solid var(--ps-border);border-radius:14px;padding:1.25rem 1.5rem;text-align:center;">
+                <div style="font-size:2rem;font-family:'Cormorant Garamond',serif;font-weight:700;color:var(--ps-primary);">@Model.WishlistCount</div>
+                <div style="font-size:1.05rem;color:var(--ps-mid);margin-top:0.25rem;">Wishlist Items</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Orders -->
+        <div class="col-lg-8">
+            <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;overflow:hidden;">
+                <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--ps-border);display:flex;align-items:center;justify-content:space-between;">
+                    <h5 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.25rem;margin:0;">Recent Orders</h5>
+                    <a asp-controller="Orders" asp-action="MyOrders" style="font-size:1.05rem;color:var(--ps-primary);text-decoration:none;font-weight:500;">View all</a>
+                </div>
+                @if (Model.RecentOrders.Any())
+                {
+                    @foreach (var order in Model.RecentOrders)
+                    {
+                        var sc = order.Status switch {
+                            OrderStatus.Delivered => ("bg-success", "Delivered"),
+                            OrderStatus.Shipped   => ("bg-info", "Shipped"),
+                            OrderStatus.Processing => ("bg-primary", "Processing"),
+                            OrderStatus.Packed    => ("bg-secondary", "Packed"),
+                            OrderStatus.Cancelled => ("bg-danger", "Cancelled"),
+                            OrderStatus.Returned  => ("bg-danger", "Returned"),
+                            _                    => ("bg-warning text-dark", order.Status.ToString())
+                        };
+                        <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--ps-border);display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-weight:600;font-size:1.125rem;">Order #@order.OrderId</div>
+                                <div style="font-size:0.975rem;color:var(--ps-mid);">
+                                    @order.OrderDate.ToString("dd MMM yyyy") · @order.OrderItems.Count item@(order.OrderItems.Count!=1?"s":"")
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                <span class="badge @sc.Item1 mb-1">@sc.Item2</span>
+                                <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:var(--ps-primary);">
+                                    JD @((order.TotalAmount + order.ShippingCost - order.DiscountAmount).ToString("N2"))
+                                </div>
+                            </div>
+                            <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.OrderId"
+                               style="font-size:1.05rem;color:var(--ps-primary);text-decoration:none;font-weight:500;white-space:nowrap;">
+                                View <i class="bi bi-chevron-right" style="font-size:0.96rem;"></i>
+                            </a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div style="padding:3rem;text-align:center;color:var(--ps-mid);">
+                        <i class="bi bi-bag" style="font-size:2.5rem;display:block;margin-bottom:1rem;"></i>
+                        <div style="font-size:1.2rem;">You haven't placed any orders yet.</div>
+                        <a asp-controller="Shop" asp-action="Index" class="btn-ps" style="margin-top:1.25rem;display:inline-flex;">Shop Now</a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick links -->
+            <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.25rem;margin-bottom:1rem;">
+                <h6 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.125rem;margin-bottom:1rem;">My Account</h6>
+                @foreach (var (icon, label, href) in new[]
+                {
+                    ("bi-person-circle", "Edit Profile", "/Account/Profile"),
+                    ("bi-bag-check", "All Orders", "/Orders/MyOrders"),
+                    ("bi-heart", "Wishlist", "/Wishlist"),
+                    ("bi-basket", "Continue Shopping", "/Shop")
+                })
+                {
+                    <a href="@href" style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0.75rem;border-radius:10px;color:var(--ps-dark);text-decoration:none;font-size:1.125rem;transition:background 0.15s;margin-bottom:0.25rem;"
+                       onmouseover="this.style.background='var(--ps-primary-light)';this.style.color='var(--ps-primary)'"
+                       onmouseout="this.style.background='transparent';this.style.color='var(--ps-dark)'">
+                        <i class="bi @icon" style="font-size:1.2rem;width:20px;text-align:center;"></i>@label
+                    </a>
+                }
+            </div>
+
+            <!-- Wishlist preview -->
+            @if (Model.WishlistPreview.Any())
+            {
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.25rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                        <h6 style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.125rem;margin:0;">Wishlist</h6>
+                        <a asp-controller="Wishlist" asp-action="Index" style="font-size:1.05rem;color:var(--ps-primary);text-decoration:none;">View all</a>
+                    </div>
+                    <div class="row g-2">
+                        @foreach (var w in Model.WishlistPreview)
+                        {
+                            <div class="col-6">
+                                <a asp-controller="Shop" asp-action="ProductDetails" asp-route-id="@w.ProductId" style="text-decoration:none;">
+                                    <div style="background:#F0F7F2;border-radius:10px;height:80px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                                        @if (!string.IsNullOrEmpty(w.Product?.ImageUrl))
+                                        {
+                                            <img src="@w.Product.ImageUrl" alt="@w.Product.DisplayName" style="width:100%;height:100%;object-fit:cover;" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-droplet-half" style="font-size:1.5rem;color:#74C69D;opacity:0.6;"></i>
+                                        }
+                                    </div>
+                                    <div style="font-size:0.975rem;font-weight:600;color:var(--ps-dark);margin-top:0.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@w.Product?.DisplayName</div>
+                                    <div style="font-size:1.05rem;color:var(--ps-primary);font-weight:700;">JD @w.Product?.Price.ToString("N2")</div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

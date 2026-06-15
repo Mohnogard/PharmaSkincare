@@ -1,0 +1,768 @@
+@inject PharmaSkincare.Services.ICartService CartService
+@inject PharmaSkincare.Services.IWishlistService WishlistService
+@using System.Security.Claims
+@{
+    var cartCount = 0;
+    var wishlistCount = 0;
+    try { cartCount = CartService.GetItemCount(); } catch { }
+    if (User.IsInRole("Customer") && User.Identity?.IsAuthenticated == true)
+    {
+        var uid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (uid != null) try { wishlistCount = await WishlistService.GetCountAsync(uid); } catch { }
+    }
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — PharmaSkincare</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --ps-primary: #2C6E49;
+            --ps-primary-dark: #1B4332;
+            --ps-primary-light: #D8F3DC;
+            --ps-cream: #FAF9F7;
+            --ps-dark: #1A1A1A;
+            --ps-mid: #6B7280;
+            --ps-border: #E8E8E6;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        html { font-size: 19px; scroll-behavior: smooth; }
+        body {
+            background: var(--ps-cream);
+            font-family: 'Inter', sans-serif;
+            font-size: 1.2rem;
+            color: var(--ps-dark);
+            margin: 0;
+            line-height: 1.65;
+        }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Cormorant Garamond', serif; line-height: 1.2; }
+        a { color: inherit; }
+        img { max-width: 100%; }
+
+        /* ── Announcement bar ── */
+        .announcement-bar {
+            background: var(--ps-primary-dark);
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            font-size: 1.14rem;
+            letter-spacing: 0.04em;
+            padding: 0.5rem 1rem;
+        }
+
+        /* ── Navigation ── */
+        .shop-nav {
+            background: #fff;
+            border-bottom: 1px solid var(--ps-border);
+            position: sticky; top: 0; z-index: 1000;
+        }
+        .shop-nav-inner {
+            max-width: 1700px; margin: 0 auto;
+            display: flex; align-items: center;
+            padding: 0 1.5rem; height: 72px; gap: 2rem;
+        }
+        .nav-brand {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.1rem; font-weight: 700;
+            color: var(--ps-dark); text-decoration: none;
+            white-space: nowrap; flex-shrink: 0; letter-spacing: -0.02em;
+            -webkit-text-stroke: 0.5px currentColor;
+        }
+        .nav-brand em { color: var(--ps-primary); font-style: normal; }
+
+        .nav-center { display: flex; align-items: center; gap: 0; flex: 1; justify-content: flex-start; }
+
+        .nav-link-item {
+            position: relative; font-size: 16px; font-weight: 500;
+            color: var(--ps-dark); text-decoration: none;
+            padding: 0.5rem 0.4rem; border-radius: 8px;
+            display: flex; align-items: center; gap: 0.2rem;
+            white-space: nowrap; transition: color 0.15s, background 0.15s;
+            cursor: pointer; background: none; border: none; font-family: inherit;
+        }
+        .nav-link-item:hover { color: var(--ps-primary); background: #F5FBF7; }
+        .nav-link-item.active { color: var(--ps-primary); }
+        .chevron { font-size: 11px; transition: transform 0.2s; }
+        .nav-dropdown-wrap.open .chevron { transform: rotate(180deg); }
+
+        /* Click-based dropdown */
+        .nav-dropdown-wrap { position: relative; }
+        .nav-dropdown {
+            display: none; position: absolute; top: calc(100% + 4px);
+            left: 50%; transform: translateX(-50%);
+            min-width: 210px; background: #fff;
+            border: 1px solid var(--ps-border); border-radius: 14px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+            padding: 0.5rem; z-index: 1001;
+            animation: ddFade 0.15s ease;
+        }
+        .nav-dropdown-wrap.open .nav-dropdown { display: block; }
+        @@keyframes ddFade {
+            from { opacity:0; transform: translateX(-50%) translateY(-6px); }
+            to   { opacity:1; transform: translateX(-50%) translateY(0); }
+        }
+        .nav-dropdown a {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.6rem 0.875rem; font-size: 1.125rem;
+            color: var(--ps-dark); text-decoration: none;
+            border-radius: 8px; transition: background 0.12s;
+        }
+        .nav-dropdown a:hover { background: var(--ps-primary-light); color: var(--ps-primary); }
+        .nav-dropdown hr { margin: 0.375rem 0.5rem; border-color: var(--ps-border); }
+
+        /* Right nav */
+        .nav-right { display: flex; align-items: center; gap: 0.1rem; flex-shrink: 0; }
+        .nav-icon-btn {
+            position: relative;
+            min-width: 46px; height: auto; width: auto;
+            padding: 0.35rem 0.55rem;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 2px;
+            border-radius: 10px; color: var(--ps-dark); text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+            font-size: 1.5rem; background: none; border: none; cursor: pointer;
+        }
+        .nav-icon-btn:hover { background: var(--ps-primary-light); color: var(--ps-primary); }
+        .nav-icon-label {
+            font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em;
+            text-transform: uppercase; line-height: 1; color: inherit; white-space: nowrap;
+        }
+        .nav-badge {
+            position: absolute; top: 3px; right: 3px;
+            width: 18px; height: 18px;
+            background: var(--ps-primary); color: #fff;
+            border-radius: 50%; font-size: 0.96rem;
+            font-weight: 700; display: flex; align-items: center;
+            justify-content: center; line-height: 1; border: 2px solid #fff;
+        }
+        .nav-badge.wishlist-badge { background: #dc2626; }
+
+        /* Nav search */
+        .nav-search { flex: 0 1 240px; min-width: 0; position: relative; }
+        .nav-search-input {
+            width: 100%; background: #F5F5F3; border: 1px solid var(--ps-border);
+            border-radius: 50px; padding: 0.42rem 1rem 0.42rem 2.3rem;
+            font-size: 1.08rem; font-family: inherit; color: var(--ps-dark);
+            outline: none; transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+        .nav-search-input:focus { background: #fff; border-color: var(--ps-primary); box-shadow: 0 0 0 3px rgba(44,110,73,0.1); }
+        .nav-search-input::placeholder { color: #9CA3AF; }
+        .nav-search-icon { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: var(--ps-mid); font-size: 1.02rem; pointer-events: none; }
+
+        /* Account dropdown anchored right */
+        .nav-dropdown.dropdown-right {
+            left: auto; right: 0; transform: none;
+        }
+        .nav-dropdown-wrap.open .nav-dropdown.dropdown-right {
+            animation: ddFadeRight 0.15s ease;
+        }
+        @@keyframes ddFadeRight {
+            from { opacity:0; transform: translateY(-6px); }
+            to   { opacity:1; transform: translateY(0); }
+        }
+        .dropdown-user-name {
+            padding: 0.5rem 0.875rem 0.375rem;
+            font-size: 1.14rem; color: var(--ps-mid);
+            font-weight: 500; max-width: 200px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .dropdown-signout {
+            width: 100%; background: none; border: none; text-align: left;
+            padding: 0.6rem 0.875rem; font-size: 1.125rem;
+            color: #dc2626; border-radius: 8px; cursor: pointer;
+            display: flex; align-items: center; gap: 0.5rem;
+            transition: background 0.12s; font-family: inherit;
+        }
+        .dropdown-signout:hover { background: #FEF2F2; }
+
+        /* Mobile toggle — always hidden until ≤1199px */
+        .nav-mobile-toggle { display: none !important; }
+
+        /* Slide-in drawer */
+        .nav-mobile-menu {
+            display: flex; flex-direction: column;
+            position: fixed; top: 0; right: 0; bottom: 0;
+            width: min(340px, 88vw);
+            background: #fff; z-index: 1100;
+            padding: 1.5rem; overflow-y: auto;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -8px 0 40px rgba(0,0,0,0.14);
+        }
+        .nav-mobile-menu.open { transform: translateX(0); }
+
+        /* Dark overlay behind drawer */
+        .nav-mobile-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.38);
+            z-index: 1099;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .nav-mobile-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .mobile-nav-link {
+            font-size: 1.25rem; font-family: 'Cormorant Garamond', serif;
+            color: var(--ps-dark); text-decoration: none; padding: 0.875rem 0;
+            border-bottom: 1px solid var(--ps-border); font-weight: 600;
+        }
+        .mobile-nav-link:hover { color: var(--ps-primary); }
+
+        /* Below 1200px: hide desktop nav and search, show hamburger */
+        @@media (max-width: 1199.98px) {
+            .nav-center { display: none; }
+            .nav-search { display: none !important; }
+            .nav-mobile-toggle { display: flex !important; }
+            .shop-nav-inner { padding: 0 1rem; height: 64px; }
+            #currencyDropdown { display: none !important; }
+            .nav-icon-label { display: none !important; }
+            .nav-icon-btn { min-width: 38px; padding: 0.35rem 0.45rem; font-size: 1.35rem; }
+            /* Push icon group to the far right so logo stays left */
+            .nav-right { margin-left: auto; }
+        }
+
+        /* Sticky sidebar utility — disables below lg so it doesn't overlay content */
+        .ps-sticky { position: sticky; top: 90px; }
+        @@media (max-width: 991.98px) { .ps-sticky { position: static !important; top: auto !important; } }
+
+        /* Prevent any stray horizontal overflow */
+        body { overflow-x: hidden; }
+
+        /* General mobile fixes */
+        @@media (max-width: 767.98px) {
+            html { font-size: 16px; }
+            .section-title { font-size: clamp(1.5rem, 5vw, 2.25rem) !important; }
+            .container-shop { padding: 0 0.85rem; }
+            .shop-footer { padding: 2.5rem 0 1.5rem; }
+        }
+        @@media (max-width: 575.98px) {
+            html { font-size: 15px; }
+            .product-card-img { height: 200px; }
+            .section-title { font-size: clamp(1.35rem, 5vw, 1.75rem) !important; }
+        }
+
+        /* ── Main ── */
+        main.shop-main { min-height: 60vh; }
+        .container-shop { max-width: 1700px; margin: 0 auto; padding: 0 1.5rem; }
+        @@media (max-width: 576px) { .container-shop { padding: 0 1rem; } }
+        .shop-alerts { max-width: 1700px; margin: 0 auto; padding: 0.75rem 1.5rem 0; }
+
+        /* ── Product cards ── */
+        .product-card {
+            background: #fff; border-radius: 16px; border: 1px solid var(--ps-border);
+            overflow: hidden; transition: box-shadow 0.25s, transform 0.25s;
+            height: 100%; display: flex; flex-direction: column;
+        }
+        .product-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.1); transform: translateY(-3px); }
+        .product-card-img {
+            height: 240px;
+            background: linear-gradient(135deg,#F0F7F2 0%,#E8F5ED 100%);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; flex-shrink: 0; position: relative;
+        }
+        .product-card-img img { width:100%; height:100%; object-fit:cover; transition: transform 0.35s; }
+        .product-card:hover .product-card-img img { transform: scale(1.05); }
+        .product-card-body { padding: 1.125rem 1.125rem 1.25rem; flex:1; display:flex; flex-direction:column; }
+        .product-card-cat { font-size:1.14rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--ps-primary); margin-bottom:0.4rem; }
+        .product-card-name { font-family:'Cormorant Garamond',serif; font-size:1.3rem; font-weight:700; color:var(--ps-dark); line-height:1.25; margin-bottom:0.35rem; }
+        .product-card-size { font-size:1.14rem; color:var(--ps-mid); margin-bottom:0.5rem; }
+        .product-card-desc { font-size:1.14rem; color:var(--ps-mid); line-height:1.55; flex:1; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+        .product-card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:1rem; padding-top:0.875rem; border-top:1px solid var(--ps-border); }
+        .product-price { font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:700; color:var(--ps-primary); }
+        .btn-view-product {
+            background: var(--ps-primary); color:#fff; border:none;
+            border-radius:9px; padding:0.5rem 1rem; font-size:1.14rem;
+            font-weight:600; text-decoration:none; transition:background 0.15s; white-space:nowrap; cursor:pointer;
+        }
+        .btn-view-product:hover { background:var(--ps-primary-dark); color:#fff; }
+        .out-of-stock-badge { background:#F5F5F3; color:var(--ps-mid); border-radius:8px; padding:0.4rem 0.875rem; font-size:1.14rem; font-weight:500; }
+
+        /* ── Buttons ── */
+        .btn-ps {
+            background: var(--ps-primary); border:none; color:#fff;
+            border-radius:10px; padding:0.65rem 1.5rem;
+            font-size:1.125rem; font-weight:600; cursor:pointer;
+            transition:background 0.15s; text-decoration:none;
+            display:inline-flex; align-items:center; gap:0.4rem; font-family:inherit;
+        }
+        .btn-ps:hover { background:var(--ps-primary-dark); color:#fff; }
+        .btn-outline-ps {
+            border:1.5px solid var(--ps-primary); color:var(--ps-primary);
+            border-radius:10px; background:transparent;
+            padding:0.6rem 1.25rem; font-size:1.125rem;
+            font-weight:500; text-decoration:none;
+            transition:all 0.15s; display:inline-flex; align-items:center; gap:0.4rem;
+        }
+        .btn-outline-ps:hover { background:var(--ps-primary); color:#fff; }
+
+        /* ── Forms ── */
+        .form-control, .form-select {
+            border-color:#E0E0DC; border-radius:9px;
+            font-size:1.125rem; padding:0.6rem 0.9rem;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color:var(--ps-primary); box-shadow:0 0 0 3px rgba(44,110,73,0.1);
+        }
+        /* Autofill — prevent browser from shrinking font */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            font-size: 1.125rem !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        .form-label { font-size:1.125rem; font-weight:500; color:#374151; margin-bottom:0.4rem; }
+
+        /* ── Section headings ── */
+        .section-title { font-family:'Cormorant Garamond',serif; font-size:2.25rem; font-weight:700; color:var(--ps-dark); line-height:1.15; }
+        .section-subtitle { font-size:1.125rem; color:var(--ps-mid); }
+
+        /* ── Footer ── */
+        .shop-footer { background:#1B4332; color:rgba(255,255,255,0.8); margin-top:5rem; padding:3.5rem 0 2rem; }
+        .footer-brand { font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:700; color:#fff; margin-bottom:0.5rem; }
+        .footer-tagline { font-size:1.14rem; color:rgba(255,255,255,0.5); }
+        .footer-heading { font-size:1.14rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:0.875rem; }
+        .footer-links { list-style:none; padding:0; margin:0; }
+        .footer-links li { margin-bottom:0.5rem; }
+        .footer-links a { font-size:1.14rem; color:rgba(255,255,255,0.7); text-decoration:none; transition:color 0.15s; }
+        .footer-links a:hover { color:#fff; }
+        .footer-divider { border-color:rgba(255,255,255,0.1); margin:2.5rem 0 1.25rem; }
+        .footer-legal { font-size:1.14rem; color:rgba(255,255,255,0.35); }
+        .footer-social-btn {
+            width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center;
+            border-radius:8px; color:rgba(255,255,255,0.6);
+            background:rgba(255,255,255,0.08); font-size:1.2rem;
+            text-decoration:none; transition:all 0.15s;
+        }
+        .footer-social-btn:hover { background:rgba(255,255,255,0.18); color:#fff; }
+        .alert { font-size:1.125rem; }
+
+        /* Currency selector */
+        .currency-option {
+            width:100%; background:none; border:none; text-align:left;
+            padding:0.5rem 0.875rem; border-radius:8px; font-family:inherit;
+            cursor:pointer; font-size:1.14rem; display:block; color:var(--ps-dark);
+            transition:background 0.12s, color 0.12s;
+        }
+        .currency-option:hover, .currency-option.active {
+            background:var(--ps-primary-light); color:var(--ps-primary); font-weight:600;
+        }
+        .currency-nav-btn {
+            font-size:1.05rem; font-weight:700; width:auto; padding:0 0.75rem;
+            gap:0.2rem; min-width:54px; letter-spacing:0.02em;
+        }
+
+        /* Global font floor */
+        main.shop-main small { font-size:1.14rem; }
+    </style>
+</head>
+<body>
+
+<div class="announcement-bar">
+    Free delivery on orders over JD 40 &nbsp;&nbsp;·&nbsp;&nbsp; Pharmaceutical-grade formulations &nbsp;&nbsp;·&nbsp;&nbsp; Endorsed by medical professionals
+</div>
+
+<nav class="shop-nav">
+    <div class="shop-nav-inner">
+        <a asp-controller="Shop" asp-action="Index" class="nav-brand">Pharma<em>Skincare</em></a>
+
+        <div class="nav-center">
+            <div class="nav-dropdown-wrap" id="shopDropdown">
+                <button class="nav-link-item" data-dropdown="shopDropdown">
+                    Shop <i class="bi bi-chevron-down chevron"></i>
+                </button>
+                <div class="nav-dropdown">
+                    <a asp-controller="Shop" asp-action="ShopAll"><i class="bi bi-list-ul"></i>Shop All</a>
+                    <hr />
+                    @if (ViewBag.NavCategories is IEnumerable<PharmaSkincare.Models.Category> navCats)
+                    {
+                        foreach (var cat in navCats)
+                        {
+                            <a asp-controller="Shop" asp-action="Index" asp-route-categoryId="@cat.CategoryId">
+                                <i class="bi bi-tag"></i>@cat.Name
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+            <a class="nav-link-item" asp-controller="Shop" asp-action="Recommendations">Recommended</a>
+            <a class="nav-link-item" asp-controller="Shop" asp-action="Doctors">Our Doctors</a>
+            <a class="nav-link-item" asp-controller="Shop" asp-action="Partners">Where to Find</a>
+            <a class="nav-link-item" asp-controller="Home" asp-action="Support">Support</a>
+            @if (User.IsInRole("Admin"))
+            {
+                <a class="nav-link-item" asp-controller="Dashboard" asp-action="Index">
+                    <i class="bi bi-grid-1x2"></i>Dashboard
+                </a>
+            }
+        </div>
+
+        <!-- Search bar -->
+        <form class="nav-search" action="/Shop/ShopAll" method="get">
+            <i class="bi bi-search nav-search-icon"></i>
+            <input type="text" name="search" class="nav-search-input" placeholder="Search products…" autocomplete="off" />
+        </form>
+
+        <div class="nav-right">
+            <!-- Currency selector -->
+            @{
+                var currencyList = new[] {
+                    (Code:"JOD", Label:"JD — Jordanian Dinar"),
+                    (Code:"USD", Label:"$ — US Dollar"),
+                    (Code:"EUR", Label:"€ — Euro")
+                };
+            }
+            <div class="nav-dropdown-wrap" id="currencyDropdown">
+                <button class="nav-icon-btn currency-nav-btn" data-dropdown="currencyDropdown" title="Currency">
+                    <span id="currencyLabel">JD</span>
+                    <i class="bi bi-chevron-down chevron"></i>
+                </button>
+                <div class="nav-dropdown dropdown-right" style="min-width:190px;">
+                    <div style="padding:0.4rem 0.875rem 0.25rem;font-size:0.96rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ps-mid);">Currency</div>
+                    @foreach (var c in currencyList)
+                    {
+                        <button class="currency-option" data-currency="@c.Code">@c.Label</button>
+                    }
+                </div>
+            </div>
+
+            @if (User.IsInRole("Customer"))
+            {
+                <a asp-controller="Wishlist" asp-action="Index" class="nav-icon-btn" title="Wishlist">
+                    <i class="bi bi-heart"></i>
+                    <span class="nav-icon-label">Wishlist</span>
+                    @if (wishlistCount > 0)
+                    {
+                        <span class="nav-badge wishlist-badge">@(wishlistCount > 9 ? "9+" : wishlistCount.ToString())</span>
+                    }
+                </a>
+            }
+            <a asp-controller="Cart" asp-action="Index" class="nav-icon-btn" title="Basket">
+                <i class="bi bi-basket2"></i>
+                <span class="nav-icon-label">Basket</span>
+                <span id="cart-badge" class="nav-badge" style="@(cartCount > 0 ? "" : "display:none;")">@(cartCount > 9 ? "9+" : cartCount.ToString())</span>
+            </a>
+
+            <div class="nav-dropdown-wrap" id="accountDropdown">
+                <button class="nav-icon-btn" data-dropdown="accountDropdown" title="Account">
+                    <i class="bi bi-person"></i>
+                    <span class="nav-icon-label">Account</span>
+                </button>
+                <div class="nav-dropdown dropdown-right" style="min-width:200px;">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="dropdown-user-name">@User.Identity.Name</div>
+                        <hr />
+                        @if (User.IsInRole("Customer"))
+                        {
+                            <a asp-controller="Dashboard" asp-action="Index"><i class="bi bi-person-circle"></i>My Account</a>
+                            <a asp-controller="Orders" asp-action="MyOrders"><i class="bi bi-bag-check"></i>My Orders</a>
+                            <a asp-controller="Wishlist" asp-action="Index"><i class="bi bi-heart"></i>Wishlist</a>
+                        }
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <a asp-controller="Dashboard" asp-action="Index"><i class="bi bi-grid-1x2"></i>Dashboard</a>
+                        }
+                        <a asp-controller="Account" asp-action="Profile"><i class="bi bi-gear"></i>Settings</a>
+                        <hr />
+                        <form asp-controller="Account" asp-action="Logout" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="dropdown-signout">
+                                <i class="bi bi-box-arrow-left"></i>Sign Out
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Login"><i class="bi bi-box-arrow-in-right"></i>Sign In</a>
+                        <a asp-controller="Account" asp-action="Register"><i class="bi bi-person-plus"></i>Create Account</a>
+                    }
+                </div>
+            </div>
+
+            <button class="nav-icon-btn nav-mobile-toggle" id="mobileMenuBtn" aria-label="Menu">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<div class="nav-mobile-overlay" id="mobileOverlay"></div>
+<div class="nav-mobile-menu" id="mobileMenu">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <span class="nav-brand">Pharma<em>Skincare</em></span>
+        <button class="nav-icon-btn" id="closeMobileMenu"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <a class="mobile-nav-link" asp-controller="Shop" asp-action="ShopAll">Shop All</a>
+    <a class="mobile-nav-link" asp-controller="Shop" asp-action="Recommendations">Recommended</a>
+    <a class="mobile-nav-link" asp-controller="Shop" asp-action="Doctors">Our Doctors</a>
+    <a class="mobile-nav-link" asp-controller="Shop" asp-action="Partners">Where to Find</a>
+    <a class="mobile-nav-link" asp-controller="Home" asp-action="About">About Us</a>
+    <a class="mobile-nav-link" asp-controller="Home" asp-action="Contact">Contact Us</a>
+    <a class="mobile-nav-link" asp-controller="Home" asp-action="Support">Support</a>
+    <a class="mobile-nav-link" asp-controller="Cart" asp-action="Index">Basket (@cartCount)</a>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <a class="mobile-nav-link" asp-controller="Account" asp-action="Profile">Settings</a>
+        @if (User.IsInRole("Customer"))
+        {
+            <a class="mobile-nav-link" asp-controller="Orders" asp-action="MyOrders">My Orders</a>
+            <a class="mobile-nav-link" asp-controller="Wishlist" asp-action="Index">Wishlist (@wishlistCount)</a>
+        }
+        @if (User.IsInRole("Admin"))
+        {
+            <a class="mobile-nav-link" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+        }
+        <div class="mt-auto pt-4">
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-ps w-100 justify-content-center">Sign Out</button>
+            </form>
+        </div>
+    }
+    else
+    {
+        <a class="mobile-nav-link" asp-controller="Account" asp-action="Login">Sign In</a>
+        <a class="mobile-nav-link" asp-controller="Account" asp-action="Register">Create Account</a>
+    }
+</div>
+
+<main class="shop-main">
+    @RenderBody()
+</main>
+
+<footer class="shop-footer">
+    <div class="container-shop">
+        <div class="row g-4 g-lg-5">
+            <div class="col-lg-4">
+                <div class="footer-brand">PharmaSkincare</div>
+                <div class="footer-tagline">Pharmaceutical-grade skincare, backed by science and endorsed by clinicians.</div>
+                <div class="d-flex gap-2 mt-3">
+                    <a href="#" class="footer-social-btn"><i class="bi bi-instagram"></i></a>
+                    <a href="#" class="footer-social-btn"><i class="bi bi-facebook"></i></a>
+                    <a href="#" class="footer-social-btn"><i class="bi bi-twitter-x"></i></a>
+                    <a href="#" class="footer-social-btn"><i class="bi bi-youtube"></i></a>
+                    <a href="#" class="footer-social-btn"><i class="bi bi-snapchat"></i></a>
+                </div>
+                <!-- Certification badges -->
+                <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1.25rem;">
+                    <span style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:6px;padding:0.3rem 0.7rem;font-size:1.02rem;color:rgba(255,255,255,0.65);display:flex;align-items:center;gap:0.35rem;">
+                        <i class="bi bi-shield-check"></i> ISO 22716
+                    </span>
+                    <span style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:6px;padding:0.3rem 0.7rem;font-size:1.02rem;color:rgba(255,255,255,0.65);display:flex;align-items:center;gap:0.35rem;">
+                        <i class="bi bi-award"></i> Dermatologically Tested
+                    </span>
+                    <span style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:6px;padding:0.3rem 0.7rem;font-size:1.02rem;color:rgba(255,255,255,0.65);display:flex;align-items:center;gap:0.35rem;">
+                        <i class="bi bi-heart"></i> Cruelty-Free
+                    </span>
+                    <span style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:6px;padding:0.3rem 0.7rem;font-size:1.02rem;color:rgba(255,255,255,0.65);display:flex;align-items:center;gap:0.35rem;">
+                        <i class="bi bi-clipboard2-check"></i> CPSR Compliant
+                    </span>
+                </div>
+            </div>
+            <div class="col-sm-4 col-lg-2 offset-lg-2">
+                <div class="footer-heading">Shop</div>
+                <ul class="footer-links">
+                    <li><a asp-controller="Shop" asp-action="Index">All Products</a></li>
+                    <li><a asp-controller="Shop" asp-action="Recommendations">Recommended</a></li>
+                    <li><a asp-controller="Shop" asp-action="Partners">Where to Buy</a></li>
+                </ul>
+            </div>
+            <div class="col-sm-4 col-lg-2">
+                <div class="footer-heading">Account</div>
+                <ul class="footer-links">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li><a asp-controller="Account" asp-action="Profile">Settings</a></li>
+                        <li><a asp-controller="Orders" asp-action="MyOrders">My Orders</a></li>
+                        <li><a asp-controller="Wishlist" asp-action="Index">Wishlist</a></li>
+                    }
+                    else
+                    {
+                        <li><a asp-controller="Account" asp-action="Login">Sign In</a></li>
+                        <li><a asp-controller="Account" asp-action="Register">Register</a></li>
+                    }
+                </ul>
+            </div>
+            <div class="col-sm-4 col-lg-2">
+                <div class="footer-heading">Company</div>
+                <ul class="footer-links">
+                    <li><a asp-controller="Home" asp-action="About">About Us</a></li>
+                    <li><a asp-controller="Home" asp-action="Contact">Contact Us</a></li>
+                    <li><a asp-controller="Home" asp-action="Support">Support</a></li>
+                    <li><a asp-controller="Home" asp-action="Testimonials">Testimonials</a></li>
+                    <li><a asp-controller="Shop" asp-action="Partners">Partners</a></li>
+                </ul>
+            </div>
+        </div>
+        <div style="margin-top:2rem;padding:1rem 1.25rem;background:rgba(255,255,255,0.05);border-radius:10px;border:1px solid rgba(255,255,255,0.1);">
+            <p style="font-size:1.02rem;color:rgba(255,255,255,0.45);margin:0;line-height:1.6;">
+                <strong style="color:rgba(255,255,255,0.6);">Medical Disclaimer:</strong> PharmaSkincare products are intended for topical use only and are not medicines or medical devices. They are not intended to diagnose, treat, cure, or prevent any disease or medical condition. Individual results may vary. Consult a healthcare professional before use if you have a medical condition, are pregnant, or are taking medication.
+            </p>
+        </div>
+        <hr class="footer-divider" />
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="footer-legal">© @DateTime.UtcNow.Year PharmaSkincare Jordan. All rights reserved.</div>
+            <div class="d-flex gap-4">
+                <a href="#" class="footer-legal" style="text-decoration:none;">Privacy Policy</a>
+                <a href="#" class="footer-legal" style="text-decoration:none;">Terms of Use</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function initDropdowns() {
+        document.querySelectorAll('[data-dropdown]').forEach(trigger => {
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const wrap = document.getElementById(this.dataset.dropdown);
+                const isOpen = wrap.classList.contains('open');
+                closeAll();
+                if (!isOpen) wrap.classList.add('open');
+            });
+        });
+        document.addEventListener('click', closeAll);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+    }
+    function closeAll() {
+        document.querySelectorAll('.nav-dropdown-wrap.open').forEach(w => w.classList.remove('open'));
+    }
+    const mobileBtn     = document.getElementById('mobileMenuBtn');
+    const closeBtn      = document.getElementById('closeMobileMenu');
+    const mobileMenu    = document.getElementById('mobileMenu');
+    const mobileOverlay = document.getElementById('mobileOverlay');
+    function openDrawer()  {
+        mobileMenu?.classList.add('open');
+        mobileOverlay?.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeDrawer() {
+        mobileMenu?.classList.remove('open');
+        mobileOverlay?.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+    mobileBtn?.addEventListener('click', openDrawer);
+    closeBtn?.addEventListener('click', closeDrawer);
+    mobileOverlay?.addEventListener('click', closeDrawer);
+    initDropdowns();
+    @if (TempData["Success"] != null)
+    {
+        <text>Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Success"]?.ToString())), showConfirmButton: false, timer: 2000, timerProgressBar: true, width: 'auto' });</text>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <text>Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Error"]?.ToString())), showConfirmButton: true, confirmButtonColor: '#2C6E49', width: 'auto' });</text>
+    }
+    @if (TempData["Info"] != null)
+    {
+        <text>Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Info"]?.ToString())), showConfirmButton: false, timer: 3000, timerProgressBar: true, width: 'auto' });</text>
+    }
+    // ── AJAX add-to-basket ──
+    function psCartToast(msg, ok) {
+        Swal.fire({ toast: true, position: 'top-end', icon: ok ? 'success' : 'error',
+            title: msg, showConfirmButton: false, timer: 2000, timerProgressBar: true, width: 'auto' });
+    }
+    function psUpdateCartBadge(count) {
+        const badge = document.getElementById('cart-badge');
+        if (!badge) return;
+        badge.textContent = count > 9 ? '9+' : count;
+        badge.style.display = count > 0 ? '' : 'none';
+    }
+    document.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (!form.matches('form[action*="/Cart/Add"]') && !form.action?.includes('/Cart/Add')) return;
+        e.preventDefault();
+        fetch(form.action || '/Cart/Add', {
+            method: 'POST',
+            headers: { 'X-Ajax-Cart': '1' },
+            body: new FormData(form)
+        })
+        .then(r => r.json())
+        .then(d => { psCartToast(d.message, d.success); if (d.success) psUpdateCartBadge(d.cartCount); })
+        .catch(() => psCartToast('Could not reach server.', false));
+    });
+    // ── Currency conversion (JD base) ──
+    const PS_CURRENCIES = {
+        JOD: { symbol: 'JD ', rate: 1.00 },
+        USD: { symbol: '$',   rate: 1.41 },
+        EUR: { symbol: '€',   rate: 1.30 }
+    };
+    let _psCcInit = false;
+    function psCurrencyInit() {
+        if (_psCcInit) return; _psCcInit = true;
+        const root = document.querySelector('main.shop-main') || document.body;
+        const nodes = [];
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+            acceptNode(n) {
+                const p = n.parentElement;
+                if (!p) return NodeFilter.FILTER_REJECT;
+                if (['SCRIPT','STYLE','TEXTAREA','INPUT','CODE'].includes(p.tagName)) return NodeFilter.FILTER_REJECT;
+                if (p.classList && p.classList.contains('ps-price')) return NodeFilter.FILTER_REJECT;
+                return /JD \d/.test(n.textContent) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+            }
+        });
+        let nd;
+        while ((nd = walker.nextNode())) nodes.push(nd);
+        nodes.forEach(tn => {
+            const parts = tn.textContent.split(/(JD [\d,]+\.?\d*)/);
+            if (parts.length < 2) return;
+            const frag = document.createDocumentFragment();
+            parts.forEach(part => {
+                const m = part.match(/^JD ([\d,]+\.?\d*)$/);
+                if (m) {
+                    const s = document.createElement('span');
+                    s.className = 'ps-price';
+                    s.dataset.jod = parseFloat(m[1].replace(/,/g, ''));
+                    s.textContent = part;
+                    frag.appendChild(s);
+                } else {
+                    frag.appendChild(document.createTextNode(part));
+                }
+            });
+            tn.parentNode.replaceChild(frag, tn);
+        });
+    }
+    function psSetCurrency(code) {
+        const c = PS_CURRENCIES[code]; if (!c) return;
+        psCurrencyInit();
+        document.querySelectorAll('.ps-price').forEach(el => {
+            el.textContent = c.symbol + (parseFloat(el.dataset.jod) * c.rate).toFixed(2);
+        });
+        const lbl = document.getElementById('currencyLabel');
+        if (lbl) lbl.textContent = code === 'JOD' ? 'JD' : code;
+        document.querySelectorAll('.currency-option').forEach(btn => btn.classList.toggle('active', btn.dataset.currency === code));
+        localStorage.setItem('ps_currency', code);
+    }
+    document.querySelectorAll('.currency-option').forEach(btn => {
+        btn.addEventListener('click', function() { psSetCurrency(this.dataset.currency); closeAll(); });
+    });
+    psSetCurrency(localStorage.getItem('ps_currency') || 'JOD');
+
+    // SweetAlert2 logout confirm
+    document.querySelectorAll('.dropdown-signout').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = this.closest('form');
+            Swal.fire({
+                title: 'Sign out?',
+                text: 'You will be returned to the store.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#2C6E49',
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, sign out',
+                cancelButtonText: 'Stay'
+            }).then(r => { if (r.isConfirmed) form.submit(); });
+        });
+    });
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

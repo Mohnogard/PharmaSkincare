@@ -1,0 +1,110 @@
+@model PharmaSkincare.ViewModels.OrderListViewModel
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Orders"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-receipt me-2" style="color:var(--ps-primary);"></i>Orders</h1>
+        <small class="text-muted">@Model.TotalCount total orders</small>
+    </div>
+</div>
+
+<div class="form-card mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small">Search</label>
+            <input type="text" name="search" value="@Model.SearchTerm" class="form-control form-control-sm" placeholder="Customer, order #…" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">Status</label>
+            <select name="status" class="form-select form-select-sm">
+                <option value="">All Statuses</option>
+                @foreach (var s in Enum.GetValues<OrderStatus>())
+                {
+                    <option value="@s" selected="@(s == Model.StatusFilter ? "selected" : null)">@s</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">From</label>
+            <input type="date" name="from" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">To</label>
+            <input type="date" name="to" value="@Model.DateTo?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-1 d-flex gap-1">
+            <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bi bi-funnel"></i></button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr><th>Order #</th><th>Customer</th><th>Date</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var order in Model.Orders)
+            {
+                var statusClass = order.Status switch {
+                    OrderStatus.Delivered => "bg-success",
+                    OrderStatus.Shipped => "bg-info",
+                    OrderStatus.Processing => "bg-primary",
+                    OrderStatus.Packed => "bg-secondary",
+                    OrderStatus.Cancelled => "bg-danger",
+                    OrderStatus.Returned => "bg-danger",
+                    _ => "bg-warning text-dark"
+                };
+                <tr>
+                    <td><strong>#@order.OrderId</strong></td>
+                    <td>
+                        <div style="font-weight:600;font-size:1.05rem;">@order.Customer?.FullName</div>
+                        <small class="text-muted">@order.Customer?.Email</small>
+                    </td>
+                    <td class="text-muted small">@order.OrderDate.ToString("dd MMM yyyy HH:mm")</td>
+                    <td>@order.OrderItems.Count items</td>
+                    <td><strong>JD @(order.TotalAmount + order.ShippingCost - order.DiscountAmount).ToString("N2")</strong></td>
+                    <td>
+                        @if (order.IsPaid)
+                        {
+                            <span class="badge bg-success badge-status"><i class="bi bi-check"></i> Paid</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark badge-status">Unpaid</span>
+                        }
+                    </td>
+                    <td><span class="badge badge-status @statusClass">@order.Status</span></td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@order.OrderId" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Orders.Any())
+            {
+                <tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-receipt fs-1 d-block mb-2 opacity-25"></i>No orders found.</td></tr>
+            }
+        </tbody>
+    </table>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between">
+            <small class="text-muted">Page @Model.CurrentPage of @Model.TotalPages</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@i">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

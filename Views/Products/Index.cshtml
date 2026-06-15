@@ -1,0 +1,158 @@
+@model PharmaSkincare.ViewModels.ProductListViewModel
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Products / Size Variants"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-box-seam me-2" style="color:var(--ps-primary);"></i>Products</h1>
+        <small class="text-muted">@Model.TotalCount size variants total · managed per subcategory</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Admin" asp-action="Subcategories" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-layers me-1"></i>Manage Subcategories
+        </a>
+        <a asp-action="Create" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>Add Size Variant
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="form-card mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label small">Search</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" name="search" value="@Model.SearchTerm" class="form-control" placeholder="Subcategory name or SKU…" />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small">Subcategory</label>
+            <select name="subcategoryId" class="form-select form-select-sm">
+                <option value="">All Subcategories</option>
+                @if (Model.Subcategories != null)
+                {
+                    foreach (var item in Model.Subcategories)
+                    {
+                        <option value="@item.Value" selected="@(item.Value == Model.SubcategoryFilter?.ToString() ? "selected" : null)">@item.Text</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">Stock</label>
+            <select name="lowStock" class="form-select form-select-sm">
+                <option value="">All</option>
+                <option value="true" selected="@(Model.LowStockFilter == true ? "selected" : null)">Low Stock</option>
+            </select>
+        </div>
+        <div class="col-auto d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>Subcategory</th>
+                <th>Size</th>
+                <th>SKU</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Discount</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in Model.Products)
+            {
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="product-img d-flex align-items-center justify-content-center" style="background:#e8f5f0;">
+                                @{
+                                    var primaryImg = product.ImageUrl
+                                                     ?? product.Images?.OrderBy(i => i.DisplayOrder).FirstOrDefault()?.ImageUrl
+                                                     ?? product.Subcategory?.MainImageUrl;
+                                }
+                                @if (!string.IsNullOrEmpty(primaryImg))
+                                {
+                                    <img src="@primaryImg" alt="" class="product-img" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-box" style="color:var(--ps-primary);"></i>
+                                }
+                            </div>
+                            <div style="font-weight:600;font-size:1.05rem;">@(product.Subcategory?.Name ?? "—")</div>
+                        </div>
+                    </td>
+                    <td>@(string.IsNullOrEmpty(product.Size) ? "—" : product.Size)</td>
+                    <td><code class="small">@product.SKU</code></td>
+                    <td><span class="badge bg-secondary badge-status">@product.Subcategory?.Category?.Name</span></td>
+                    <td>
+                        <strong>JD @product.FinalPrice.ToString("N2")</strong>
+                        @if (product.HasDiscount) { <small class="text-muted text-decoration-line-through ms-1">JD @product.Price.ToString("N2")</small> }
+                    </td>
+                    <td>@(product.HasDiscount ? $"{product.DiscountPercent}%" : "—")</td>
+                    <td>
+                        @if (product.IsLowStock)
+                        { <span class="stock-low"><i class="bi bi-exclamation-triangle me-1"></i>@product.StockQuantity</span> }
+                        else
+                        { <span class="stock-ok">@product.StockQuantity</span> }
+                    </td>
+                    <td>
+                        @if (product.IsActive)
+                        { <span class="badge bg-success badge-status">Active</span> }
+                        else
+                        { <span class="badge bg-secondary badge-status">Inactive</span> }
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a asp-action="Edit" asp-route-id="@product.ProductId" class="btn btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                            <form asp-action="Delete" asp-route-id="@product.ProductId" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="button" class="btn btn-outline-danger" title="Deactivate"
+                                        data-swal-confirm="Deactivate this size variant?"><i class="bi bi-archive"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Products.Any())
+            {
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="bi bi-box fs-1 d-block mb-2 opacity-25"></i>
+                        No products found. First <a asp-controller="Admin" asp-action="Subcategories">create a subcategory</a>, then <a asp-action="Create">add size variants</a>.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between">
+            <small class="text-muted">Page @Model.CurrentPage of @Model.TotalPages (@Model.TotalCount records)</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@i"
+                               asp-route-search="@Model.SearchTerm" asp-route-subcategoryId="@Model.SubcategoryFilter"
+                               asp-route-lowStock="@Model.LowStockFilter">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

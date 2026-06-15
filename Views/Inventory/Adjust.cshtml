@@ -1,0 +1,81 @@
+@model PharmaSkincare.ViewModels.InventoryAdjustmentViewModel
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Adjust Inventory"; }
+
+<div class="page-header">
+    <h1><i class="bi bi-arrows-expand me-2" style="color:var(--ps-primary);"></i>Adjust Inventory</h1>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="form-card">
+            <form asp-action="Adjust" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 mb-3" style="font-size:1.02rem;"></div>
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label asp-for="ProductId" class="form-label"></label>
+                        <select asp-for="ProductId" asp-items="Model.Products" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Select Product --</option>
+                        </select>
+                        <span asp-validation-for="ProductId" class="text-danger small"></span>
+                    </div>
+
+                    @if (Model.ProductId > 0 && !string.IsNullOrEmpty(Model.ProductName))
+                    {
+                        <div class="col-12">
+                            <div class="alert alert-info py-2 d-flex align-items-center gap-3 mb-0">
+                                <i class="bi bi-info-circle"></i>
+                                <div>
+                                    <strong>@Model.ProductName</strong>
+                                    <span class="ms-3">Current stock: <strong>@Model.CurrentStock units</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="col-md-6">
+                        <label asp-for="TransactionType" class="form-label"></label>
+                        <select asp-for="TransactionType" asp-items="Model.TransactionTypes" class="form-select"></select>
+                        <span asp-validation-for="TransactionType" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Quantity" class="form-label"></label>
+                        <input asp-for="Quantity" type="number" class="form-control" min="1" placeholder="0" />
+                        <span asp-validation-for="Quantity" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="BatchNumber" class="form-label"></label>
+                        <input asp-for="BatchNumber" class="form-control" placeholder="e.g. BATCH-2024-001" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ExpiryDate" class="form-label"></label>
+                        <input asp-for="ExpiryDate" type="date" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ReferenceNumber" class="form-label"></label>
+                        <input asp-for="ReferenceNumber" class="form-control" placeholder="e.g. PO-2024-0045" />
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Notes" class="form-label"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Reason for adjustment, supplier details…"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check2 me-1"></i>Record Transaction
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,142 @@
+@model List<PharmaSkincare.Models.Testimonial>
+@{ ViewData["Title"] = "Testimonials"; Layout = "_ShopLayout"; }
+
+@section Scripts {
+<script>
+(function() {
+    const labels = document.querySelectorAll('#starRatingWrap label');
+    function setStars(val) {
+        labels.forEach(lbl => {
+            const v = parseInt(lbl.querySelector('input').value, 10);
+            lbl.style.color = v <= val ? '#F59E0B' : '#D1D5DB';
+            lbl.style.textShadow = v <= val ? '0 0 6px rgba(245,158,11,0.4)' : 'none';
+        });
+    }
+    labels.forEach(lbl => {
+        const inp = lbl.querySelector('input');
+        lbl.addEventListener('mouseenter', () => setStars(parseInt(inp.value, 10)));
+        lbl.addEventListener('mouseleave', () => {
+            const checked = document.querySelector('#starRatingWrap input:checked');
+            setStars(checked ? parseInt(checked.value, 10) : 5);
+        });
+        inp.addEventListener('change', () => setStars(parseInt(inp.value, 10)));
+    });
+    // init
+    const init = document.querySelector('#starRatingWrap input:checked');
+    setStars(init ? parseInt(init.value, 10) : 5);
+})();
+</script>
+}
+
+<div class="container-shop" style="padding-top:4rem;padding-bottom:5rem;">
+
+    <div style="text-align:center;max-width:600px;margin:0 auto 3.5rem;">
+        <div class="section-subtitle mb-2">Customer Stories</div>
+        <h1 class="section-title" style="font-size:clamp(1.5rem,5vw,2.75rem);margin-bottom:1rem;">Real Results, Real People</h1>
+        <p style="color:var(--ps-mid);font-size:1.2rem;line-height:1.7;">
+            Read what our customers say about their experience with PharmaSkincare. Every testimonial is verified and approved by our team.
+        </p>
+    </div>
+
+    <!-- Published testimonials -->
+    @if (Model.Any())
+    {
+        <div class="row g-4 mb-5">
+            @foreach (var t in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:18px;padding:1.75rem;height:100%;display:flex;flex-direction:column;">
+                        <div style="color:#F59E0B;font-size:1.1rem;margin-bottom:0.75rem;">
+                            @for (int s = 1; s <= 5; s++) { <span>@(s <= t.Rating ? "★" : "☆")</span> }
+                        </div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;margin-bottom:0.6rem;color:var(--ps-dark);">@t.Title</div>
+                        <p style="font-size:1.08rem;color:#4B5563;line-height:1.7;flex:1;margin-bottom:1rem;">@t.Content</p>
+                        <div style="display:flex;align-items:center;gap:0.75rem;padding-top:1rem;border-top:1px solid var(--ps-border);">
+                            <div style="width:36px;height:36px;background:var(--ps-primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ps-primary);font-size:1.02rem;flex-shrink:0;">
+                                @t.AuthorName.FirstOrDefault()
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:1.05rem;">@t.AuthorName</div>
+                                <div style="font-size:0.96rem;color:var(--ps-mid);">@t.CreatedDate.ToString("dd MMMM yyyy")</div>
+                            </div>
+                            <div style="margin-left:auto;">
+                                <span style="background:var(--ps-primary-light);color:var(--ps-primary);border-radius:50px;font-size:0.96rem;font-weight:600;padding:0.2rem 0.6rem;">Verified</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div style="text-align:center;padding:4rem 0 3rem;color:var(--ps-mid);">
+            <i class="bi bi-chat-quote" style="font-size:3rem;display:block;margin-bottom:1rem;opacity:0.4;"></i>
+            <p style="font-size:1.2rem;">No testimonials yet — be the first to share your experience!</p>
+        </div>
+    }
+
+    <!-- Submit testimonial -->
+    <div style="background:#fff;border:1px solid var(--ps-border);border-radius:20px;padding:clamp(1.25rem,4vw,2.5rem);max-width:680px;margin:0 auto;width:100%;">
+        <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin-bottom:0.5rem;">Share Your Experience</h3>
+        <p style="color:var(--ps-mid);font-size:1.08rem;margin-bottom:1.75rem;">Your testimonial will be reviewed by our team before appearing on the site — usually within 24 hours.</p>
+
+        @if (User.IsInRole("Customer") && ViewBag.HasPlacedOrder == true)
+        {
+            <form asp-action="SubmitTestimonial" asp-controller="Home" method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-3">
+                    <label class="form-label">Your Rating</label>
+                    <div class="d-flex gap-2" id="starRatingWrap">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <label style="cursor:pointer;font-size:1.5rem;color:#D1D5DB;" title="@i stars">
+                                <input type="radio" name="rating" value="@i" class="visually-hidden" @(i == 5 ? "checked" : "") />
+                                ★
+                            </label>
+                        }
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Title <span style="color:var(--ps-mid);font-weight:400;">(short summary)</span></label>
+                    <input type="text" name="title" class="form-control" placeholder="e.g. Transformed my skin in 3 weeks" maxlength="200" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Your Testimonial</label>
+                    <textarea name="content" class="form-control" rows="4" placeholder="Share your experience with PharmaSkincare — what products did you use, what results did you see?" maxlength="2000" required style="resize:vertical;"></textarea>
+                </div>
+                <button type="submit" class="btn-ps" style="padding:0.75rem 2rem;font-size:1.2rem;">
+                    <i class="bi bi-send me-2"></i>Submit for Review
+                </button>
+            </form>
+        }
+        else if (User.IsInRole("Customer"))
+        {
+            <div style="background:#F9FAFB;border:1px solid var(--ps-border);border-radius:12px;padding:1.5rem;display:flex;align-items:center;gap:1rem;">
+                <i class="bi bi-bag-check" style="font-size:1.75rem;color:var(--ps-mid);flex-shrink:0;"></i>
+                <div>
+                    <div style="font-weight:600;font-size:1.05rem;margin-bottom:0.2rem;">Purchase required</div>
+                    <div style="font-size:0.984rem;color:var(--ps-mid);">Only customers who have placed an order can leave a testimonial. Place an order first — we'd love to hear what you think!</div>
+                </div>
+                <a asp-controller="Shop" asp-action="Index" class="btn-ps ms-auto" style="padding:0.55rem 1.1rem;font-size:0.98rem;white-space:nowrap;flex-shrink:0;">
+                    Shop Now
+                </a>
+            </div>
+        }
+        else
+        {
+            <div style="background:#F9FAFB;border:1px solid var(--ps-border);border-radius:12px;padding:1.5rem;text-align:center;">
+                <i class="bi bi-lock" style="font-size:2rem;color:var(--ps-mid);display:block;margin-bottom:0.75rem;"></i>
+                <p style="color:var(--ps-mid);margin-bottom:1.25rem;font-size:1.08rem;">Sign in and place an order to leave a testimonial.</p>
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    <a asp-controller="Account" asp-action="Login" class="btn-ps" style="padding:0.65rem 1.5rem;">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                    </a>
+                    <a asp-controller="Account" asp-action="Register" class="btn-outline-ps" style="padding:0.6rem 1.5rem;">
+                        Create Account
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>

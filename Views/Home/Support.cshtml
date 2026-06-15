@@ -1,0 +1,197 @@
+@{ ViewData["Title"] = "Support"; Layout = "_ShopLayout"; }
+
+<div class="container-shop" style="padding-top:4rem;padding-bottom:5rem;">
+
+    <!-- Header -->
+    <div style="text-align:center;max-width:580px;margin:0 auto 3.5rem;">
+        <div class="section-subtitle mb-2">Help Centre</div>
+        <h1 class="section-title" style="font-size:clamp(1.5rem,5vw,2.75rem);margin-bottom:1rem;">How Can We Help?</h1>
+        <p style="color:var(--ps-mid);font-size:1.2rem;line-height:1.7;">
+            Find answers to common questions below, or reach out to our team directly.
+        </p>
+    </div>
+
+    <!-- Quick links -->
+    <div class="row g-3 mb-5">
+        @foreach (var (icon, color, title, desc, anchor) in new[]{
+            ("bi-bag-check","var(--ps-primary)","Orders & Delivery","Track orders, delivery times, and shipping info","#orders"),
+            ("bi-arrow-counterclockwise","#1976d2","Returns & Refunds","Our 30-day hassle-free return policy","#returns"),
+            ("bi-droplet-half","#d97706","Product Advice","Ingredients, usage, and skin type guidance","#products"),
+            ("bi-person-circle","#6d28d9","Account Help","Login issues, settings, and profile management","#account")
+        })
+        {
+            <div class="col-sm-6 col-lg-3">
+                <a href="@anchor" style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.5rem;display:flex;flex-direction:column;align-items:center;text-align:center;text-decoration:none;color:var(--ps-dark);transition:box-shadow 0.2s,transform 0.2s;"
+                   onmouseover="this.style.boxShadow='0 8px 24px rgba(0,0,0,0.1)';this.style.transform='translateY(-2px)'"
+                   onmouseout="this.style.boxShadow='none';this.style.transform='none'">
+                    <i class="bi @icon" style="font-size:3rem;color:@color;margin-bottom:0.75rem;"></i>
+                    <div style="font-weight:700;font-size:1.05rem;margin-bottom:0.3rem;">@title</div>
+                    <div style="font-size:1.14rem;color:var(--ps-mid);">@desc</div>
+                </a>
+            </div>
+        }
+    </div>
+
+    <!-- FAQ sections -->
+    <div class="row g-5">
+        <div class="col-lg-8">
+
+            <div id="orders" style="margin-bottom:3rem;">
+                <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:2px solid var(--ps-border);">
+                    <i class="bi bi-bag-check me-2" style="color:var(--ps-primary);"></i>Orders &amp; Delivery
+                </h2>
+                <div class="accordion" id="ordersAccordion">
+                    @{
+                        var orderFaqs = new[]{
+                            ("How long does delivery take?","Standard delivery within Jordan takes 2–4 working days. Express delivery (next day) is available at checkout. You'll receive tracking information by email once your order is dispatched."),
+                            ("How do I track my order?","Once dispatched, you'll receive an email with a tracking number. You can view full tracking details by logging into your account and visiting My Orders."),
+                            ("Do you offer free delivery?","Yes — all orders over JD 40 qualify for free standard delivery. Orders under JD 40 incur a JD 5.00 shipping fee."),
+                            ("Can I change or cancel my order?","Orders can be amended or cancelled within 1 hour of placement. After that, they enter our fulfilment system. Please contact us immediately if you need to make a change.")
+                        };
+                        for (int i = 0; i < orderFaqs.Length; i++)
+                        {
+                            var (q, a) = orderFaqs[i];
+                            <div class="accordion-item" style="border:1px solid var(--ps-border);border-radius:12px;margin-bottom:0.5rem;overflow:hidden;">
+                                <h3 class="accordion-header">
+                                    <button class="accordion-button @(i > 0 ? "collapsed" : "")" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#oa@i"
+                                            style="font-size:1.14rem;font-weight:600;background:#fff;">
+                                        @q
+                                    </button>
+                                </h3>
+                                <div id="oa@i" class="accordion-collapse collapse @(i == 0 ? "show" : "")">
+                                    <div class="accordion-body" style="font-size:1.2rem;color:var(--ps-mid);line-height:1.7;">@a</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div id="returns" style="margin-bottom:3rem;">
+                <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:2px solid var(--ps-border);">
+                    <i class="bi bi-arrow-counterclockwise me-2" style="color:#1976d2;"></i>Returns &amp; Refunds
+                </h2>
+                <div class="accordion" id="returnsAccordion">
+                    @{
+                        var returnFaqs = new[]{
+                            ("What is your returns policy?","We offer a 30-day hassle-free return policy. If you're not satisfied with your purchase for any reason, simply contact us within 30 days of delivery."),
+                            ("How do I start a return?","Log into your account, go to My Orders, select the item you wish to return, and follow the steps. We'll email you a prepaid return label within 24 hours."),
+                            ("How long do refunds take?","Once we receive your return, refunds are processed within 3–5 working days. The refund will appear on your original payment method within 5–10 business days."),
+                            ("Can I return opened products?","Yes. Even if you've opened or tried a product, you can return it within 30 days as long as it hasn't been significantly used. We stand behind every product we sell.")
+                        };
+                        for (int i = 0; i < returnFaqs.Length; i++)
+                        {
+                            var (q, a) = returnFaqs[i];
+                            <div class="accordion-item" style="border:1px solid var(--ps-border);border-radius:12px;margin-bottom:0.5rem;overflow:hidden;">
+                                <h3 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#ra@i"
+                                            style="font-size:1.14rem;font-weight:600;background:#fff;">
+                                        @q
+                                    </button>
+                                </h3>
+                                <div id="ra@i" class="accordion-collapse collapse">
+                                    <div class="accordion-body" style="font-size:1.2rem;color:var(--ps-mid);line-height:1.7;">@a</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div id="products" style="margin-bottom:3rem;">
+                <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:2px solid var(--ps-border);">
+                    <i class="bi bi-droplet-half me-2" style="color:#d97706;"></i>Product Advice
+                </h2>
+                <div class="accordion" id="productsAccordion">
+                    @{
+                        var productFaqs = new[]{
+                            ("Are your products suitable for sensitive skin?","All our products are dermatologist-tested and formulated without common irritants. However, we recommend doing a patch test 24 hours before first use."),
+                            ("Are your products cruelty-free?","Absolutely. We do not test on animals and do not sell through any channels that require animal testing."),
+                            ("What does 'pharmaceutical-grade' mean?","It means our products are manufactured in certified pharmaceutical facilities under strict GMP (Good Manufacturing Practice) guidelines — the same standards as prescription medicines."),
+                            ("Can I use multiple products together?","Yes — our products are formulated to complement each other. See the 'Recommended' section for clinician-curated routines.")
+                        };
+                        for (int i = 0; i < productFaqs.Length; i++)
+                        {
+                            var (q, a) = productFaqs[i];
+                            <div class="accordion-item" style="border:1px solid var(--ps-border);border-radius:12px;margin-bottom:0.5rem;overflow:hidden;">
+                                <h3 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#pa@i"
+                                            style="font-size:1.14rem;font-weight:600;background:#fff;">
+                                        @q
+                                    </button>
+                                </h3>
+                                <div id="pa@i" class="accordion-collapse collapse">
+                                    <div class="accordion-body" style="font-size:1.2rem;color:var(--ps-mid);line-height:1.7;">@a</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div id="account">
+                <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:700;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:2px solid var(--ps-border);">
+                    <i class="bi bi-person-circle me-2" style="color:#6d28d9;"></i>Account Help
+                </h2>
+                <div class="accordion" id="accountAccordion">
+                    @{
+                        var accountFaqs = new[]{
+                            ("How do I reset my password?","Go to Sign In and click 'Forgot Password'. Enter your email and we'll send you a reset link within a few minutes."),
+                            ("How do I update my delivery address?","Log in and go to Settings (via the account icon). You can update your default address at any time."),
+                            ("Can I have multiple delivery addresses?","Currently we support one saved address per account. You can enter a different address manually at checkout."),
+                            ("How do I delete my account?","Please contact us via the Contact page with your account email. We'll process your request within 48 hours in accordance with the Jordanian Personal Data Protection Law.")
+                        };
+                        for (int i = 0; i < accountFaqs.Length; i++)
+                        {
+                            var (q, a) = accountFaqs[i];
+                            <div class="accordion-item" style="border:1px solid var(--ps-border);border-radius:12px;margin-bottom:0.5rem;overflow:hidden;">
+                                <h3 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#aa@i"
+                                            style="font-size:1.14rem;font-weight:600;background:#fff;">
+                                        @q
+                                    </button>
+                                </h3>
+                                <div id="aa@i" class="accordion-collapse collapse">
+                                    <div class="accordion-body" style="font-size:1.2rem;color:var(--ps-mid);line-height:1.7;">@a</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="ps-sticky" style="display:flex;flex-direction:column;gap:1.25rem;">
+                <div style="background:linear-gradient(135deg,#1B4332,#2C6E49);border-radius:16px;padding:1.75rem;color:#fff;">
+                    <i class="bi bi-headset" style="font-size:3rem;margin-bottom:1rem;display:block;opacity:0.8;"></i>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;margin-bottom:0.5rem;">Still need help?</div>
+                    <p style="font-size:1.2rem;color:rgba(255,255,255,0.75);margin-bottom:1.25rem;line-height:1.6;">Our support team is available Sunday to Thursday, 9am–5pm AST. We typically reply within a few hours.</p>
+                    <a asp-controller="Home" asp-action="Contact" style="background:#fff;color:#1B4332;border-radius:10px;padding:0.75rem 1.5rem;font-weight:700;text-decoration:none;font-size:1.2rem;display:inline-block;">Contact Support</a>
+                </div>
+                <div style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.5rem;">
+                    <div style="font-weight:700;font-size:1.2rem;margin-bottom:1rem;"><i class="bi bi-clock me-2" style="color:var(--ps-primary);"></i>Support Hours</div>
+                    <div style="font-size:1.2rem;color:var(--ps-mid);line-height:2;">
+                        Sunday – Thursday: 9am – 5pm AST<br />
+                        Friday: Closed<br />
+                        Saturday: Closed
+                    </div>
+                </div>
+                <a asp-controller="Home" asp-action="Testimonials" style="background:#fff;border:1px solid var(--ps-border);border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:0.875rem;text-decoration:none;color:var(--ps-dark);">
+                    <i class="bi bi-star" style="font-size:1.75rem;color:#F59E0B;flex-shrink:0;"></i>
+                    <div>
+                        <div style="font-weight:600;font-size:1.2rem;">Customer Testimonials</div>
+                        <div style="font-size:1.14rem;color:var(--ps-mid);">Read what our customers say</div>
+                    </div>
+                    <i class="bi bi-arrow-right ms-auto" style="color:var(--ps-mid);"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

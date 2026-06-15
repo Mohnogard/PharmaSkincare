@@ -1,0 +1,116 @@
+@model PharmaSkincare.ViewModels.InventoryTransactionListViewModel
+@using PharmaSkincare.Models
+@{ ViewData["Title"] = "Inventory Transactions"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-archive me-2" style="color:var(--ps-primary);"></i>Inventory</h1>
+        <small class="text-muted">@Model.TotalCount transactions</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="LowStock" class="btn btn-outline-danger btn-sm"><i class="bi bi-exclamation-triangle me-1"></i>Low Stock</a>
+        <a asp-action="Adjust" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Adjust Stock</a>
+    </div>
+</div>
+
+<div class="form-card mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small">Search</label>
+            <input type="text" name="search" value="@Model.SearchTerm" class="form-control form-control-sm" placeholder="Product name, batch…" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">Product</label>
+            <select name="productId" class="form-select form-select-sm">
+                <option value="">All Products</option>
+                @if (Model.Products != null)
+                {
+                    foreach (var item in Model.Products)
+                    {
+                        <option value="@item.Value" selected="@(item.Value == Model.ProductFilter?.ToString() ? "selected" : null)">@item.Text</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">Type</label>
+            <select name="type" class="form-select form-select-sm">
+                <option value="">All Types</option>
+                @foreach (var t in Enum.GetValues<TransactionType>())
+                {
+                    <option value="@t" selected="@(t == Model.TypeFilter ? "selected" : null)">@t</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">From</label>
+            <input type="date" name="from" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">To</label>
+            <input type="date" name="to" value="@Model.DateTo?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-1 d-flex gap-1">
+            <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bi bi-funnel"></i></button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr><th>Date</th><th>Product</th><th>Type</th><th>Qty Before</th><th>Change</th><th>Qty After</th><th>Batch</th><th>User</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var t in Model.Transactions)
+            {
+                var typeClass = t.TransactionType switch {
+                    TransactionType.StockIn => "bg-success",
+                    TransactionType.Returned => "bg-info",
+                    TransactionType.StockOut => "bg-warning text-dark",
+                    TransactionType.Damaged => "bg-danger",
+                    TransactionType.Transfer => "bg-secondary",
+                    _ => "bg-primary"
+                };
+                var sign = (t.TransactionType == TransactionType.StockIn || t.TransactionType == TransactionType.Returned) ? "+" : "-";
+                var qtyColor = sign == "+" ? "text-success" : "text-danger";
+                <tr>
+                    <td class="text-muted small">@t.TransactionDate.ToString("dd MMM yy HH:mm")</td>
+                    <td>
+                        <div style="font-weight:600;font-size:1.05rem;">@t.Product?.DisplayName</div>
+                        <small class="text-muted">@t.Product?.SKU</small>
+                    </td>
+                    <td><span class="badge badge-status @typeClass">@t.TransactionType</span></td>
+                    <td class="text-muted">@t.QuantityBefore</td>
+                    <td><strong class="@qtyColor">@sign@t.Quantity</strong></td>
+                    <td><strong>@t.QuantityAfter</strong></td>
+                    <td class="text-muted small">@(t.BatchNumber ?? "—")</td>
+                    <td class="text-muted small">@(t.User?.Email ?? "—")</td>
+                    <td class="text-muted small" style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@t.Notes">@(t.Notes ?? "—")</td>
+                </tr>
+            }
+            @if (!Model.Transactions.Any())
+            {
+                <tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>No transactions found.</td></tr>
+            }
+        </tbody>
+    </table>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="px-3 py-2 border-top d-flex align-items-center justify-content-between">
+            <small class="text-muted">Page @Model.CurrentPage of @Model.TotalPages</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@i">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

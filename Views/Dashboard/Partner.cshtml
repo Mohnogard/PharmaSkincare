@@ -1,0 +1,176 @@
+@model PharmaSkincare.ViewModels.PartnerDashboardViewModel
+@{ ViewData["Title"] = "Partner Dashboard"; Layout = "_Layout"; }
+
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-building-check me-2" style="color:var(--ps-primary);"></i>Partner Dashboard</h1>
+        <div style="font-size:1.05rem;color:var(--ps-mid);margin-top:0.2rem;">Welcome back, @Model.UserName</div>
+    </div>
+    <a asp-controller="Shop" asp-action="Index" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-shop me-1"></i>Visit Store
+    </a>
+</div>
+
+@if (Model.Doctor == null && Model.PharmacyPartner == null)
+{
+    <div class="form-card text-center py-5">
+        <i class="bi bi-hourglass-split" style="font-size:3rem;color:var(--ps-primary);opacity:0.5;"></i>
+        <h4 style="font-family:'Cormorant Garamond',serif;margin-top:1rem;">Your partner profile is being set up</h4>
+        <p style="color:var(--ps-mid);font-size:1.05rem;max-width:420px;margin:0.5rem auto 0;">
+            An administrator will link your account to a Doctor or Pharmacy Partner record shortly. Please check back later or contact support.
+        </p>
+        <a href="mailto:support@@pharmaskincare.com" class="btn btn-outline-primary mt-3">
+            <i class="bi bi-envelope me-1"></i>Contact Support
+        </a>
+    </div>
+}
+else
+{
+    <div class="row g-3 mb-3">
+        @if (Model.PharmacyPartner != null)
+        {
+            var p = Model.PharmacyPartner;
+            var statusColor = p.Status == PharmaSkincare.Models.PartnershipStatus.Active ? "#D1FAE5" : "#FEF3C7";
+            var statusText  = p.Status == PharmaSkincare.Models.PartnershipStatus.Active ? "#065F46" : "#92400E";
+            var daysLeft    = p.AgreementExpiry.HasValue ? (int)(p.AgreementExpiry.Value - DateTime.UtcNow).TotalDays : (int?)null;
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="icon-box" style="background:#D1FAE5;"><i class="bi bi-building" style="color:#065F46;"></i></div>
+                        <div class="label">Partnership Status</div>
+                    </div>
+                    <div class="value" style="font-size:1.3rem;">
+                        <span style="background:@statusColor;color:@statusText;border-radius:50px;font-size:1.02rem;padding:0.2em 0.75em;font-weight:600;">@p.Status</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="icon-box" style="background:#DBEAFE;"><i class="bi bi-percent" style="color:#1D4ED8;"></i></div>
+                        <div class="label">Commission Rate</div>
+                    </div>
+                    <div class="value">@p.CommissionRate.ToString("N1")%</div>
+                </div>
+            </div>
+
+            @if (daysLeft.HasValue)
+            {
+                var daysColor = daysLeft < 30 ? "#FEF3C7" : "#D1FAE5";
+                var daysText  = daysLeft < 30 ? "#92400E" : "#065F46";
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="icon-box" style="background:@daysColor;"><i class="bi bi-calendar-check" style="color:@daysText;"></i></div>
+                            <div class="label">Agreement Expires</div>
+                        </div>
+                        <div class="value" style="font-size:1.3rem;">@p.AgreementExpiry!.Value.ToString("dd MMM yyyy")</div>
+                        <div style="font-size:1.02rem;color:@daysText;margin-top:0.2rem;">@daysLeft days remaining</div>
+                    </div>
+                </div>
+            }
+        }
+
+        @if (Model.Doctor != null)
+        {
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="icon-box" style="background:#EDE9FE;"><i class="bi bi-award" style="color:#7C3AED;"></i></div>
+                        <div class="label">Active Endorsements</div>
+                    </div>
+                    <div class="value">@Model.Endorsements.Count</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row g-3">
+        @if (Model.PharmacyPartner != null)
+        {
+            var p = Model.PharmacyPartner;
+            <div class="col-lg-6">
+                <div class="form-card h-100">
+                    <div style="font-size:1.05rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ps-mid);margin-bottom:1rem;">
+                        <i class="bi bi-building me-1" style="color:var(--ps-primary);"></i>Pharmacy Details
+                    </div>
+                    <table style="width:100%;font-size:1.05rem;border-collapse:collapse;">
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;width:40%;">Name</td><td style="font-weight:600;">@p.Name</td></tr>
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Contact</td><td>@p.ContactPerson</td></tr>
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Email</td><td>@p.Email</td></tr>
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Phone</td><td>@(p.Phone ?? "—")</td></tr>
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Location</td><td>@(p.City ?? "—")@(!string.IsNullOrEmpty(p.Country) ? ", " + p.Country : "")</td></tr>
+                        @if (p.AgreementDate.HasValue)
+                        {
+                            <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Agreement Start</td><td>@p.AgreementDate.Value.ToString("dd MMM yyyy")</td></tr>
+                        }
+                        @if (p.AgreementExpiry.HasValue)
+                        {
+                            <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Agreement End</td><td>@p.AgreementExpiry.Value.ToString("dd MMM yyyy")</td></tr>
+                        }
+                        @if (!string.IsNullOrEmpty(p.Notes))
+                        {
+                            <tr><td style="color:var(--ps-mid);padding:0.35rem 0;vertical-align:top;">Notes</td><td>@p.Notes</td></tr>
+                        }
+                    </table>
+                </div>
+            </div>
+        }
+
+        @if (Model.Doctor != null)
+        {
+            var d = Model.Doctor;
+            <div class="col-lg-6">
+                <div class="form-card h-100">
+                    <div style="font-size:1.05rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ps-mid);margin-bottom:1rem;">
+                        <i class="bi bi-person-badge me-1" style="color:var(--ps-primary);"></i>Doctor Profile
+                    </div>
+                    <table style="width:100%;font-size:1.05rem;border-collapse:collapse;">
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;width:40%;">Name</td><td style="font-weight:600;">@d.Name</td></tr>
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Specialty</td><td>@d.Specialty</td></tr>
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Qualification</td><td>@(d.Qualification ?? "—")</td></tr>
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Hospital</td><td>@(d.Hospital ?? "—")</td></tr>
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Location</td><td>@(d.City ?? "—")@(!string.IsNullOrEmpty(d.Country) ? ", " + d.Country : "")</td></tr>
+                        <tr><td style="color:var(--ps-mid);padding:0.35rem 0;">Licence No.</td><td>@(d.LicenseNumber ?? "—")</td></tr>
+                    </table>
+                </div>
+            </div>
+        }
+
+        @if (Model.Endorsements.Any())
+        {
+            <div class="col-12">
+                <div class="table-card">
+                    <div style="padding:0.875rem 1rem;font-size:1.05rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ps-mid);border-bottom:1px solid var(--ps-border);">
+                        <i class="bi bi-award me-1" style="color:#F59E0B;"></i>Endorsed Products
+                    </div>
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>SKU</th>
+                                <th>Type</th>
+                                <th>Endorsed On</th>
+                                <th>Expires</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var e in Model.Endorsements)
+                            {
+                                <tr>
+                                    <td><strong>@e.Product?.DisplayName</strong></td>
+                                    <td style="color:var(--ps-mid);font-size:1.02rem;">@e.Product?.SKU</td>
+                                    <td>@(e.EndorsementType ?? "—")</td>
+                                    <td>@e.EndorsementDate.ToString("dd MMM yyyy")</td>
+                                    <td>@(e.ExpiryDate.HasValue ? e.ExpiryDate.Value.ToString("dd MMM yyyy") : "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+}
