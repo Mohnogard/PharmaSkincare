@@ -10,13 +10,15 @@ namespace PharmaSkincare.Data
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Seeder");
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
             await context.Database.MigrateAsync();
 
             // Seed roles
-            string[] roles = { "Admin", "Customer" };
+            string[] roles = { "Admin", "Customer", "Demo" };
             foreach (var role in roles)
             {
                 if (!await roleManager.RoleExistsAsync(role))
@@ -24,21 +26,35 @@ namespace PharmaSkincare.Data
             }
 
             // Seed admin user
-            if (await userManager.FindByEmailAsync("admin@pharmaskincare.com") == null)
+            var adminPassword = config["Seed:AdminPassword"];
+            if (string.IsNullOrWhiteSpace(adminPassword))
             {
-                var admin = new ApplicationUser
+                logger.LogWarning("Seed:AdminPassword not set, skipping admin user.");
+            }
+            else if (await userManager.FindByEmailAsync("admin@pharmaskincare.com") == null)   // admin@nexusgear.com
+            {
+                var admin = new ApplicationUser { /* same fields as now */ };
+                var result = await userManager.CreateAsync(admin, adminPassword);
+                if (result.Succeeded) await userManager.AddToRoleAsync(admin, "Admin");
+                else logger.LogError("Admin seed failed: {Errors}",
+                    string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+            if (await userManager.FindByEmailAsync("demo-admin@pharmaskincare.com") == null)   // demo-admin@nexusgear.com
+            {
+                var demo = new ApplicationUser
                 {
-                    UserName = "admin@pharmaskincare.com",
-                    Email = "admin@pharmaskincare.com",
-                    FirstName = "System",
-                    LastName = "Administrator",
+                    UserName = "demo-admin@pharmaskincare.com",
+                    Email = "demo-admin@pharmaskincare.com",
+                    FirstName = "Demo",
+                    LastName = "Admin",
                     EmailConfirmed = true,
-                    IsActive = true,
-                    CreatedDate = DateTime.UtcNow
+                    IsActive = true,                 // PharmaSkincare only, remove in NexusGear
+                    CreatedDate = DateTime.UtcNow    // PharmaSkincare only, remove in NexusGear
                 };
-                var result = await userManager.CreateAsync(admin, "Admin@123456");
-                if (result.Succeeded)
-                    await userManager.AddToRoleAsync(admin, "Admin");
+                var result = await userManager.CreateAsync(demo, "Demo@2026");
+                if (result.Succeeded) await userManager.AddToRolesAsync(demo, new[] { "Admin", "Demo" });
+                else logger.LogError("Demo admin seed failed: {Errors}",
+                    string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
             // Seed demo customer

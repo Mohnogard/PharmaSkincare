@@ -77,7 +77,8 @@ builder.Services.AddScoped<IWishlistService, WishlistService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 // MVC
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+    options.Filters.Add<PharmaSkincare.Filters.DemoReadOnlyFilter>());   // NexusGear.Filters in NexusGear
 
 var app = builder.Build();
 
