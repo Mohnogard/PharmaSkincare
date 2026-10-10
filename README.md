@@ -39,7 +39,9 @@ cd PharmaSkincare
    dotnet user-secrets set "Stripe:PublishableKey" "pk_test_..."
    dotnet user-secrets set "Stripe:SecretKey" "sk_test_..."
 ```
+
    Pay with test card `4242 4242 4242 4242`, any future date, any CVC.
+   
 3. **Run:**
 ```bash
    dotnet run
